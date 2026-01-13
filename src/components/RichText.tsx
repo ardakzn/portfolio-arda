@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { normalizeMarkdownText, slugifyHeading as slugifyHeadingStable } from '../lib/markdown';
+import { withBaseUrl } from '../lib/paths';
 
 type RichTextSize = 'normal' | 'small';
 
@@ -205,7 +206,7 @@ function Carousel({
 }: {
   images: { alt: string; src: string }[];
 }) {
-  const safeImages = useMemo(() => images.filter((img) => isSafeUrl(img.src)), [images]);
+  const safeImages = useMemo(() => images.filter((img) => isSafeUrl(img.src)).map((img) => ({ ...img, src: withBaseUrl(img.src) })), [images]);
   const [index, setIndex] = useState(0);
   const [hovered, setHovered] = useState(false);
 
@@ -362,10 +363,11 @@ export default function RichText({
         if (b.type === 'image') {
           const safe = isSafeUrl(b.src);
           if (!safe) return null;
+          const src = withBaseUrl(b.src);
           return (
             <figure key={idx} className="my-4">
               <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black/20">
-                <img src={b.src} alt={b.alt || 'image'} className="w-full" loading="lazy" />
+                <img src={src} alt={b.alt || 'image'} className="w-full" loading="lazy" />
                 {b.alt && (
                   <figcaption className="absolute inset-x-0 bottom-0">
                     <div className="h-20 bg-gradient-to-t from-black/75 via-black/35 to-transparent" />
