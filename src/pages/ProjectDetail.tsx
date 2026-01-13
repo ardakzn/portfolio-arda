@@ -285,7 +285,7 @@ export default function ProjectDetail() {
 
   return (
     <div
-      className="min-h-screen text-slate-100 relative"
+      className="min-h-screen text-slate-100 relative overflow-x-hidden"
       style={{
         background:
           'radial-gradient(circle at 15% 20%, rgba(59, 227, 255, 0.08), transparent 25%), radial-gradient(circle at 80% 10%, rgba(249, 178, 52, 0.08), transparent 25%), linear-gradient(135deg, #060b16 0%, #0e1526 100%)',
