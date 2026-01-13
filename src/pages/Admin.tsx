@@ -12,6 +12,7 @@ import { loadSnippetsFromFile } from '../lib/snippets';
 import { clearDraftSnippets, loadDraftSnippets, saveDraftSnippets } from '../lib/snippetsDraft';
 import { clearDraftSite, loadDraftSite, saveDraftSite } from '../lib/siteDraft';
 import { loadSiteFromFile } from '../lib/site';
+import { withBaseUrl } from '../lib/paths';
 
 type EditorProject = ProjectWithDetails;
 type EditorSnippet = CodeSnippet & { annotations?: CodeAnnotation[] };
@@ -924,7 +925,7 @@ export default function Admin() {
     try {
       setSnippetsError(null);
       setError(null);
-      const res = await fetch(normalized, { cache: 'no-store' });
+      const res = await fetch(withBaseUrl(normalized), { cache: 'no-store' });
       if (!res.ok) throw new Error(`Fetch failed (${res.status}) for ${normalized}`);
       const text = await res.text();
       updateSnippet(snippetIdx, { code: text, code_path: normalized });

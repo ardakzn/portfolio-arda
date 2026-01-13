@@ -1,6 +1,7 @@
 import type { ProjectWithDetails } from '../types/portfolio';
 import { isAdminEnabled } from './admin';
 import { loadDraftProjects } from './projectsDraft';
+import { withBaseUrl } from './paths';
 
 function titleForSort(p: ProjectWithDetails): string {
   const raw = p.title as unknown;
@@ -27,7 +28,7 @@ function sortProjects(list: ProjectWithDetails[]): ProjectWithDetails[] {
 }
 
 export async function loadProjectsFromFile(): Promise<ProjectWithDetails[]> {
-  const res = await fetch('/data/projects.json', { cache: 'no-store' });
+  const res = await fetch(withBaseUrl('/data/projects.json'), { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to load projects.json');
   const data: unknown = await res.json();
   const list = Array.isArray(data) ? (data as ProjectWithDetails[]) : [];

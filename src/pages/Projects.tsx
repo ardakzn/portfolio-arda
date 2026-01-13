@@ -6,6 +6,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { loadProjectsList } from '../lib/projects';
 import { useSiteRuntime } from '../lib/siteRuntime';
+import { withBaseUrl } from '../lib/paths';
 
 const mediaFallbackGradient =
   'radial-gradient(circle at 20% 25%, rgba(59, 227, 255, 0.22), transparent 55%), radial-gradient(circle at 80% 10%, rgba(249, 178, 52, 0.14), transparent 55%), linear-gradient(135deg, rgba(7, 11, 20, 0.95), rgba(16, 26, 47, 0.92))';
@@ -99,7 +100,9 @@ export default function Projects() {
             {projects.map((project) => {
               const video = (project.thumbnail_video_url || '').trim();
               const image = (project.thumbnail_image_url || '').trim();
-              const hasMedia = !!video || !!image;
+              const videoSrc = video ? withBaseUrl(video) : '';
+              const imageSrc = image ? withBaseUrl(image) : '';
+              const hasMedia = !!videoSrc || !!imageSrc;
               const summary = (t(project.summary) || '').trim();
               const tech = project.tech_stack || [];
               const title = t(project.title) || '';
@@ -122,9 +125,9 @@ export default function Projects() {
                       <div className="relative h-[62%] md:h-[58%] overflow-hidden">
                         <div className="absolute inset-0" style={{ backgroundImage: mediaFallbackGradient }} />
 
-                        {!video && image && (
+                        {!videoSrc && imageSrc && (
                           <img
-                            src={image}
+                            src={imageSrc}
                             alt={title}
                             className="absolute inset-0 w-full h-full object-cover"
                             onError={(e) => {
@@ -133,9 +136,9 @@ export default function Projects() {
                           />
                         )}
 
-                        {video && (
+                        {videoSrc && (
                           <video
-                            src={video}
+                            src={videoSrc}
                             muted
                             playsInline
                             loop
@@ -151,7 +154,7 @@ export default function Projects() {
                           />
                         )}
 
-                        {video && !videoReadyBySlug[project.slug] && showVideoPlaceholderBySlug[project.slug] && (
+                        {videoSrc && !videoReadyBySlug[project.slug] && showVideoPlaceholderBySlug[project.slug] && (
                           <div className="absolute inset-0">
                             <div className="absolute inset-0 bg-gradient-to-t from-[#060b16]/75 via-[#060b16]/45 to-transparent" />
                             <div className="absolute inset-0 flex items-center justify-center">

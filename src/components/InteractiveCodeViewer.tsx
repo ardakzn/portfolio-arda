@@ -6,6 +6,7 @@ import { CodeSnippet, CodeAnnotation } from '../types/portfolio';
 import RichText from './RichText';
 import { useSiteRuntime } from '../lib/siteRuntime';
 import type { LocalizedString } from '../types/i18n';
+import { withBaseUrl } from '../lib/paths';
 
 const uiClickForDetails: LocalizedString = { en: 'Click for details', tr: 'Detaylar için tıkla' };
 const uiLine: LocalizedString = { en: 'Line', tr: 'Satır' };
@@ -39,7 +40,7 @@ export default function InteractiveCodeViewer({ snippet, annotations, hideHeader
 
       if (snippet.code_path) {
         try {
-          const res = await fetch(snippet.code_path);
+          const res = await fetch(withBaseUrl(snippet.code_path));
           if (!res.ok) throw new Error('Failed to fetch code file');
           const text = await res.text();
           if (!didCancel) setLoadedCode(text);

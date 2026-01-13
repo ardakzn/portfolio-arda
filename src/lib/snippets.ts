@@ -1,4 +1,5 @@
 import type { CodeAnnotation, CodeSnippet } from '../types/portfolio';
+import { withBaseUrl } from './paths';
 
 export type CodeSnippetWithAnnotations = CodeSnippet & { annotations?: CodeAnnotation[] };
 
@@ -27,7 +28,7 @@ function sortSnippets(list: CodeSnippetWithAnnotations[]): CodeSnippetWithAnnota
 }
 
 export async function loadSnippetsFromFile(): Promise<CodeSnippetWithAnnotations[]> {
-  const res = await fetch('/data/snippets.json', { cache: 'no-store' });
+  const res = await fetch(withBaseUrl('/data/snippets.json'), { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to load snippets.json');
   const data: unknown = await res.json();
   const list = Array.isArray(data) ? (data as CodeSnippetWithAnnotations[]) : [];

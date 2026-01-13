@@ -6,6 +6,7 @@ import Footer from '../components/Footer';
 import { loadProjectsList } from '../lib/projects';
 import { useSiteRuntime } from '../lib/siteRuntime';
 import type { ProjectWithDetails } from '../types/portfolio';
+import { withBaseUrl } from '../lib/paths';
 
 type FeaturedCard = {
   project: ProjectWithDetails;
@@ -20,7 +21,7 @@ const featuredFallbackGradient =
 
 export default function Home() {
   const { site, t } = useSiteRuntime();
-  const cvBaseUrl = (site.links?.cv_pdf_url || '/assets/CV.pdf').trim() || '/assets/CV.pdf';
+  const cvBaseUrl = withBaseUrl((site.links?.cv_pdf_url || '/assets/CV.pdf').trim() || '/assets/CV.pdf');
   const pdfUrl = `${cvBaseUrl}#zoom=page-width`;
   const email = (site.links?.email || 'hello@yourdomain.com').trim() || 'hello@yourdomain.com';
 
@@ -47,8 +48,8 @@ export default function Home() {
 
         const mapped: FeaturedCard[] = useList.map((p) => ({
           project: p,
-          image: (p.thumbnail_image_url || '').trim() || undefined,
-          video: (p.thumbnail_video_url || '').trim() || undefined,
+          image: ((p.thumbnail_image_url || '').trim() && withBaseUrl((p.thumbnail_image_url || '').trim())) || undefined,
+          video: ((p.thumbnail_video_url || '').trim() && withBaseUrl((p.thumbnail_video_url || '').trim())) || undefined,
           slug: p.slug,
           tags: (p.tech_stack || []).slice(0, 3),
         }));

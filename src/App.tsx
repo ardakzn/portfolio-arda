@@ -5,13 +5,14 @@ import ProjectDetail from './pages/ProjectDetail';
 import Projects from './pages/Projects';
 import { isAdminEnabled } from './lib/admin';
 import { SiteRuntimeProvider } from './lib/siteRuntime';
+import { routerBasename } from './lib/paths';
 
 function App() {
   const AdminPage = isAdminEnabled() ? lazy(() => import('./pages/Admin')) : null;
 
   return (
     <SiteRuntimeProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={routerBasename}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/projects" element={<Projects />} />

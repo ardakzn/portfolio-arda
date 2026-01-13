@@ -11,6 +11,7 @@ import RichText from '../components/RichText';
 import { useSiteRuntime } from '../lib/siteRuntime';
 import { extractMarkdownHeadings } from '../lib/markdown';
 import type { LocalizedString } from '../types/i18n';
+import { withBaseUrl } from '../lib/paths';
 
 const uiProjectNotFound: LocalizedString = { en: 'Project not found', tr: 'Proje bulunamadı' };
 const uiBackHome: LocalizedString = { en: 'Back to home', tr: 'Ana sayfaya dön' };
@@ -593,18 +594,18 @@ export default function ProjectDetail() {
 
                 {!project.thumbnail_video_url && project.thumbnail_image_url && (
                   <img
-                    src={project.thumbnail_image_url}
+                    src={withBaseUrl(project.thumbnail_image_url)}
                     alt={`${localizedTitle} cover`}
                     className="absolute inset-0 w-full h-full object-cover"
                     onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = '/assets/sample-arch.svg';
+                      (e.currentTarget as HTMLImageElement).src = withBaseUrl('/assets/sample-arch.svg');
                     }}
                   />
                 )}
 
                 {project.thumbnail_video_url && (
                   <video
-                    src={project.thumbnail_video_url}
+                    src={withBaseUrl(project.thumbnail_video_url)}
                     muted
                     playsInline
                     loop
