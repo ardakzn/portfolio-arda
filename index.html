@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interactive Portfolio Site</title>
+    <meta name="app-base" content="%BASE_URL%" />
+    <meta property="og:image" content="%BASE_URL%assets/sample-arch.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="%BASE_URL%assets/sample-arch.svg" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      (function () {
+        var params = new URLSearchParams(window.location.search);
+        var p = params.get('p');
+        if (!p) return;
+
+        var s = params.get('s') || '';
+        var h = params.get('h') || '';
+
+        var baseMeta = document.querySelector('meta[name="app-base"]');
+        var base = (baseMeta && baseMeta.getAttribute('content')) || '/';
+        if (!base.startsWith('/')) base = '/' + base;
+        if (!base.endsWith('/')) base = base + '/';
+
+        var next = base + p.replace(/^\//, '');
+        if (s) next += '?' + s;
+        if (h) next += '#' + h;
+        window.history.replaceState(null, '', next);
+      })();
+    </script>
+    <script type="module" src="%BASE_URL%src/main.tsx"></script>
+  </body>
+</html>
