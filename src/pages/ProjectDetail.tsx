@@ -295,7 +295,7 @@ export default function ProjectDetail() {
         <Navbar />
 
         {hasExtraContent && (
-          <div id="project-toc-bar" className="xl:hidden border-b border-white/5 bg-[#0c1324]/55 backdrop-blur">
+          <div id="project-toc-bar" className="min-[1700px]:hidden border-b border-white/5 bg-[#0c1324]/55 backdrop-blur">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
               <button
                 type="button"
@@ -317,7 +317,7 @@ export default function ProjectDetail() {
       {hasExtraContent && mobileTocOpen && (
         <>
           <div
-            className="fixed inset-0 z-40 bg-black/20 xl:hidden"
+            className="fixed inset-0 z-40 bg-black/20 min-[1700px]:hidden"
             role="button"
             tabIndex={-1}
             aria-label="Close table of contents"
@@ -328,7 +328,7 @@ export default function ProjectDetail() {
           />
           <div
             id="mobile-toc-panel"
-            className="fixed z-50 left-4 right-4 xl:hidden"
+            className="fixed z-50 left-4 right-4 min-[1700px]:hidden"
             style={{ top: mobileTocTop }}
           >
             <div className="rounded-3xl border border-white/10 bg-[#101a2f]/95 backdrop-blur shadow-2xl shadow-black/40 overflow-hidden">
@@ -449,7 +449,7 @@ export default function ProjectDetail() {
         </>
       )}
 
-      <aside className="hidden xl:block fixed left-0 top-20 z-30 w-80 px-4">
+      <aside className="hidden min-[1700px]:block fixed left-0 top-20 z-30 w-80 px-4">
         <div className="max-h-[calc(100vh-6rem)] overflow-hidden">
           <div className="px-1">
             <Link
@@ -510,9 +510,7 @@ export default function ProjectDetail() {
                               {g.children.length > 0 ? (
                                 <button
                                   type="button"
-                                  aria-label={
-                                    tocExpandedByGroup[`${sec.id}::${g.id}`] ? 'Collapse group' : 'Expand group'
-                                  }
+                                  aria-label={tocExpandedByGroup[`${sec.id}::${g.id}`] ? 'Collapse group' : 'Expand group'}
                                   onClick={() =>
                                     setTocExpandedByGroup((cur) => ({
                                       ...cur,
@@ -570,18 +568,16 @@ export default function ProjectDetail() {
         </div>
       </aside>
 
-      <div className="max-w-6xl mx-auto xl:ml-80 xl:mr-auto px-4 sm:px-6 lg:px-8 py-10 relative">
-        {!hasExtraContent && (
-          <Link
-            to="/projects"
-            className="xl:hidden inline-flex items-center gap-2 text-[#3be3ff] hover:text-[#f9b234] mb-8 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {t(uiBackProjects)}
-          </Link>
-        )}
+      <div className="min-[1700px]:pl-80 min-[1700px]:pr-80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative">
+          {!hasExtraContent && (
+            <Link to="/projects" className="min-[1700px]:hidden inline-flex items-center gap-2 text-[#3be3ff] hover:text-[#f9b234] mb-8 transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+              {t(uiBackProjects)}
+            </Link>
+          )}
 
-        <article className="space-y-10">
+          <article className="space-y-10">
           <header
             id="overview"
             className={`relative rounded-[2.5rem] p-[1px] shadow-2xl shadow-black/35 bg-gradient-to-br from-[#3be3ff]/25 via-white/5 to-[#f9b234]/20 transition ${
@@ -713,11 +709,12 @@ export default function ProjectDetail() {
                 </section>
               );
             })}
-        </article>
+          </article>
+        </div>
       </div>
 
       {showFloatingNav && (
-        <div className="fixed z-50 bottom-5 right-4 sm:right-6 flex flex-col gap-2 xl:hidden">
+        <div className="fixed z-50 bottom-5 right-4 sm:right-6 flex flex-col gap-2 min-[1700px]:hidden">
           <button
             type="button"
             onClick={scrollToTop}
@@ -730,8 +727,10 @@ export default function ProjectDetail() {
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Footer />
+      <div className="min-[1700px]:pl-80 min-[1700px]:pr-80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Footer />
+        </div>
       </div>
     </div>
   );
