@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { normalizeMarkdownText, slugifyHeading as slugifyHeadingStable } from '../lib/markdown';
 import { withBaseUrl } from '../lib/paths';
@@ -209,28 +209,155 @@ function Carousel({
   const safeImages = useMemo(() => images.filter((img) => isSafeUrl(img.src)).map((img) => ({ ...img, src: withBaseUrl(img.src) })), [images]);
   const [index, setIndex] = useState(0);
   const [hovered, setHovered] = useState(false);
+  const [dragX, setDragX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [animateTrack, setAnimateTrack] = useState(true);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const viewportWidthRef = useRef(0);
+  const swipeRef = useRef<{
+    pointerId: number | null;
+    startX: number;
+    startY: number;
+    lastX: number;
+    lastY: number;
+    moved: boolean;
+  }>({ pointerId: null, startX: 0, startY: 0, lastX: 0, lastY: 0, moved: false });
+
+  const prevIndex = (i: number) => (i - 1 + safeImages.length) % safeImages.length;
+  const nextIndex = (i: number) => (i + 1) % safeImages.length;
 
   const prev = () => {
     if (safeImages.length <= 1) return;
-    setIndex((i) => (i - 1 + safeImages.length) % safeImages.length);
+    setAnimateTrack(true);
+    setIndex((i) => prevIndex(i));
   };
 
   const next = () => {
     if (safeImages.length <= 1) return;
-    setIndex((i) => (i + 1) % safeImages.length);
+    setAnimateTrack(true);
+    setIndex((i) => nextIndex(i));
   };
 
   useEffect(() => {
     if (safeImages.length <= 1) return;
-    if (hovered) return;
+    if (hovered || dragging) return;
     const t = window.setInterval(() => {
       setIndex((i) => (i + 1) % safeImages.length);
     }, 4500);
     return () => window.clearInterval(t);
-  }, [hovered, safeImages.length]);
+  }, [dragging, hovered, safeImages.length]);
+
+  useEffect(() => {
+    const updateWidth = () => {
+      const el = viewportRef.current;
+      if (!el) return;
+      viewportWidthRef.current = el.getBoundingClientRect().width;
+    };
+
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
 
   if (safeImages.length === 0) return null;
   const current = safeImages[Math.max(0, Math.min(index, safeImages.length - 1))];
+
+  const shouldIgnoreSwipeStart = (target: EventTarget | null) => {
+    if (!(target instanceof Element)) return false;
+    return !!target.closest('button, a, input, textarea, select, summary');
+  };
+
+  const onPointerDown: React.PointerEventHandler<HTMLDivElement> = (e) => {
+    if (safeImages.length <= 1) return;
+    if (shouldIgnoreSwipeStart(e.target)) return;
+    if (e.button !== 0) return;
+
+    const el = viewportRef.current;
+    if (el) viewportWidthRef.current = el.getBoundingClientRect().width;
+
+    setAnimateTrack(false);
+    setDragging(true);
+    swipeRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      lastX: e.clientX,
+      lastY: e.clientY,
+      moved: false,
+    };
+
+    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove: React.PointerEventHandler<HTMLDivElement> = (e) => {
+    const s = swipeRef.current;
+    if (s.pointerId !== e.pointerId) return;
+    s.lastX = e.clientX;
+    s.lastY = e.clientY;
+
+    const dx = s.lastX - s.startX;
+    const dy = s.lastY - s.startY;
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+
+    if (!s.moved) {
+      if (absX < 10) return;
+      if (absX <= absY) return;
+      s.moved = true;
+    }
+
+    if (s.moved) {
+      e.preventDefault();
+      const w = viewportWidthRef.current || 1;
+      const clamped = Math.max(-w, Math.min(w, dx));
+      setDragX(clamped);
+    }
+  };
+
+  const onPointerUp: React.PointerEventHandler<HTMLDivElement> = (e) => {
+    const s = swipeRef.current;
+    if (s.pointerId !== e.pointerId) return;
+
+    const dx = s.lastX - s.startX;
+    const dy = s.lastY - s.startY;
+
+    swipeRef.current.pointerId = null;
+
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+    const w = viewportWidthRef.current || 1;
+    setAnimateTrack(true);
+
+    if (absX < 50 || absX <= absY) {
+      setDragX(0);
+      window.setTimeout(() => {
+        setDragging(false);
+        setAnimateTrack(true);
+      }, 200);
+      return;
+    }
+
+    if (dx > 0) {
+      setDragX(w);
+      window.setTimeout(() => {
+        setIndex((i) => prevIndex(i));
+        setAnimateTrack(false);
+        setDragX(0);
+        setDragging(false);
+        window.setTimeout(() => setAnimateTrack(true), 0);
+      }, 200);
+      return;
+    }
+
+    setDragX(-w);
+    window.setTimeout(() => {
+      setIndex((i) => nextIndex(i));
+      setAnimateTrack(false);
+      setDragX(0);
+      setDragging(false);
+      window.setTimeout(() => setAnimateTrack(true), 0);
+    }, 200);
+  };
 
   return (
     <div
@@ -238,19 +365,28 @@ function Carousel({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+      <div
+        ref={viewportRef}
+        className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black/20 touch-pan-y select-none"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
         <div className="relative w-full pt-[56.25%]">
-          {safeImages.map((img, i) => (
-            <img
-              key={`${img.src}-${i}`}
-              src={img.src}
-              alt={img.alt || 'image'}
-              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-in-out ${
-                i === index ? 'opacity-100' : 'opacity-0 pointer-events-none'
-              }`}
-              loading="lazy"
-            />
-          ))}
+          <div
+            className={`absolute inset-0 flex ${animateTrack ? 'transition-transform duration-200 ease-out' : ''}`}
+            style={{
+              transform: `translateX(calc(-${(index * 100) / Math.max(1, safeImages.length)}% + ${dragX}px))`,
+              width: `${safeImages.length * 100}%`,
+            }}
+          >
+            {safeImages.map((img, i) => (
+              <div key={`${img.src}-${i}`} className="relative h-full flex-shrink-0" style={{ width: `${100 / safeImages.length}%` }}>
+                <img src={img.src} alt={img.alt || 'image'} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+              </div>
+            ))}
+          </div>
         </div>
 
         {current.alt && (
@@ -267,7 +403,9 @@ function Carousel({
         )}
 
         {safeImages.length > 1 && (
-          <div className={`pointer-events-none absolute inset-0 transition-opacity ${hovered ? 'opacity-100' : 'opacity-0'}`}>
+          <div
+            className={`pointer-events-none absolute inset-0 transition-opacity ${hovered ? 'opacity-100' : 'opacity-0'} sm:pointer-events-auto`}
+          >
             <button
               type="button"
               onClick={(e) => {
@@ -275,7 +413,7 @@ function Carousel({
                 e.stopPropagation();
                 prev();
               }}
-              className="pointer-events-auto absolute left-3 top-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-[#0e1526]/75 p-3 text-white shadow-lg transition hover:bg-[#0e1526] hover:-translate-x-0.5 active:scale-95 active:bg-[#0e1526] active:shadow-none"
+              className="hidden sm:block pointer-events-auto absolute left-3 top-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-[#0e1526]/75 p-3 text-white shadow-lg transition hover:bg-[#0e1526] hover:-translate-x-0.5 active:scale-95 active:bg-[#0e1526] active:shadow-none"
               aria-label="Previous image"
             >
               <ChevronLeft className="h-4 w-4 text-[#f9b234]" />
@@ -287,7 +425,7 @@ function Carousel({
                 e.stopPropagation();
                 next();
               }}
-              className="pointer-events-auto absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-[#0e1526]/75 p-3 text-white shadow-lg transition hover:bg-[#0e1526] hover:translate-x-0.5 active:scale-95 active:bg-[#0e1526] active:shadow-none"
+              className="hidden sm:block pointer-events-auto absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-[#0e1526]/75 p-3 text-white shadow-lg transition hover:bg-[#0e1526] hover:translate-x-0.5 active:scale-95 active:bg-[#0e1526] active:shadow-none"
               aria-label="Next image"
             >
               <ChevronRight className="h-4 w-4 text-[#f9b234]" />

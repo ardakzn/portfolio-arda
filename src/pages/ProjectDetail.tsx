@@ -228,6 +228,17 @@ export default function ProjectDetail() {
     };
   }, [mobileTocOpen]);
 
+  useEffect(() => {
+    const onOverlay = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { source?: string; open?: boolean } | undefined;
+      if (!detail) return;
+      if (detail.source === 'nav' && detail.open) setMobileTocOpen(false);
+    };
+
+    window.addEventListener('codefolio:overlay', onOverlay as EventListener);
+    return () => window.removeEventListener('codefolio:overlay', onOverlay as EventListener);
+  }, []);
+
   const renderSnippet = (id: string, caption?: string) => {
     const snip = snippetById.get(id) || null;
     if (!snip) return null;
@@ -299,7 +310,13 @@ export default function ProjectDetail() {
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
               <button
                 type="button"
-                onClick={() => setMobileTocOpen((v) => !v)}
+                onClick={() =>
+                  setMobileTocOpen((v) => {
+                    const next = !v;
+                    window.dispatchEvent(new CustomEvent('codefolio:overlay', { detail: { source: 'toc', open: next } }));
+                    return next;
+                  })
+                }
                 className="w-full inline-flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#101a2f]/35 px-4 py-3 text-sm text-white hover:bg-[#101a2f]/50 transition active:scale-[0.99]"
                 aria-expanded={mobileTocOpen}
                 aria-controls="mobile-toc-panel"
@@ -569,7 +586,7 @@ export default function ProjectDetail() {
       </aside>
 
       <div className="min-[1700px]:pl-80 min-[1700px]:pr-80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative">
+        <div className="max-w-7xl mx-auto px-4 max-[390px]:px-3 sm:px-6 lg:px-8 py-10 relative">
           {!hasExtraContent && (
             <Link to="/projects" className="min-[1700px]:hidden inline-flex items-center gap-2 text-[#3be3ff] hover:text-[#f9b234] mb-8 transition-colors">
               <ArrowLeft className="w-4 h-4" />
@@ -580,19 +597,18 @@ export default function ProjectDetail() {
           <article className="space-y-10">
           <header
             id="overview"
-            className={`relative rounded-[2.5rem] p-[1px] shadow-2xl shadow-black/35 bg-gradient-to-br from-[#3be3ff]/25 via-white/5 to-[#f9b234]/20 transition ${
+            className={`relative -mx-4 max-[390px]:-mx-3 sm:mx-0 rounded-3xl sm:rounded-[2.5rem] p-[1px] shadow-2xl shadow-black/35 bg-gradient-to-br from-[#3be3ff]/25 via-white/5 to-[#f9b234]/20 transition ${
               highlightSection === 'overview' ? 'ring-2 ring-[#3be3ff]/30' : ''
             }`}
           >
-              <div className="relative rounded-[2.5rem] overflow-hidden bg-[#0b1221]/70">
-              <div className="relative h-[360px] sm:h-[420px] md:h-[520px]">
-                <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-black/10 to-transparent" />
+              <div className="relative rounded-3xl sm:rounded-[2.5rem] overflow-hidden bg-[#0b1221]/70">
+              <div className="relative w-full pt-[56.25%] sm:pt-0 sm:h-[420px] md:h-[520px]">
 
                 {!project.thumbnail_video_url && project.thumbnail_image_url && (
                   <img
                     src={withBaseUrl(project.thumbnail_image_url)}
                     alt={`${localizedTitle} cover`}
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-contain sm:object-cover"
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).src = withBaseUrl('/assets/sample-arch.svg');
                     }}
@@ -600,22 +616,32 @@ export default function ProjectDetail() {
                 )}
 
                 {project.thumbnail_video_url && (
-                  <video
-                    src={withBaseUrl(project.thumbnail_video_url)}
-                    muted
-                    playsInline
-                    loop
-                    autoPlay
-                    preload="metadata"
-                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${heroVideoReady ? 'opacity-100' : 'opacity-0'}`}
-                    onLoadedData={() => {
-                      setHeroVideoReady(true);
-                      setHeroShowPlaceholder(false);
-                    }}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLVideoElement).style.display = 'none';
-                    }}
-                  />
+                  <>
+                    <img
+                      src={withBaseUrl(project.thumbnail_image_url || '/assets/sample-arch.svg')}
+                      alt={`${localizedTitle} poster`}
+                      className="absolute inset-0 w-full h-full object-contain sm:object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = withBaseUrl('/assets/sample-arch.svg');
+                      }}
+                    />
+                    <video
+                      src={withBaseUrl(project.thumbnail_video_url)}
+                      muted
+                      playsInline
+                      loop
+                      autoPlay
+                      preload="metadata"
+                      className={`absolute inset-0 w-full h-full object-contain sm:object-cover transition-opacity duration-200 ${heroVideoReady ? 'opacity-100' : 'opacity-0'}`}
+                      onLoadedData={() => {
+                        setHeroVideoReady(true);
+                        setHeroShowPlaceholder(false);
+                      }}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLVideoElement).style.display = 'none';
+                      }}
+                    />
+                  </>
                 )}
 
                 {project.thumbnail_video_url && !heroVideoReady && heroShowPlaceholder && (
@@ -641,49 +667,43 @@ export default function ProjectDetail() {
                   </div>
                 )}
 
-                <div className="absolute inset-x-0 bottom-0 h-[68%] bg-gradient-to-t from-[#0b1221]/95 via-[#0b1221]/55 to-transparent" />
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute -inset-24 bg-[radial-gradient(circle_at_20%_30%,rgba(59,227,255,0.18),transparent_40%),radial-gradient(circle_at_80%_20%,rgba(249,178,52,0.14),transparent_42%)]" />
+              </div>
+
+              <div className="px-5 sm:px-8 pt-5 sm:pt-6 pb-4 sm:pb-6 bg-[#0b1221]/65 border-t border-white/5">
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-200/80">
+                  <Calendar className="w-4 h-4 text-slate-300" />
+                  <span>
+                    {new Date(project.created_at).toLocaleDateString(dateLocale, {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </span>
                 </div>
 
-                <div className="absolute inset-0 flex items-end">
-                  <div className="w-full p-6 sm:p-8">
-                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-slate-200/80 mb-3">
-                      <div className="inline-flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-slate-300" />
-                        <span>
-                          {new Date(project.created_at).toLocaleDateString(dateLocale, {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })}
-                        </span>
-                      </div>
-                      <span className="hidden sm:inline h-1 w-1 rounded-full bg-white/25" />
-                      <div className="flex flex-wrap gap-2">
-                        {(project.tech_stack || []).slice(0, 6).map((tech, idx) => (
-                          <span
-                            key={`${tech}-${idx}`}
-                            className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border border-white/10 bg-white/5 text-slate-100"
-                          >
-                            <Tag className="w-3 h-3 text-[#3be3ff]" />
-                            {tech}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <h1 className="text-4xl sm:text-5xl font-semibold text-white leading-tight drop-shadow-[0_12px_40px_rgba(0,0,0,0.65)]">
-                      {localizedTitle}
-                    </h1>
-
-                    {(localizedSummary || '').trim() && (
-                      <p className="mt-3 max-w-3xl text-base sm:text-lg text-slate-200/85 leading-relaxed line-clamp-2">
-                        {localizedSummary}
-                      </p>
-                    )}
+                {(project.tech_stack || []).length > 0 && (
+                  <div className="mt-3 flex flex-nowrap sm:flex-wrap gap-2 overflow-x-auto sm:overflow-visible max-w-full pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {(project.tech_stack || []).slice(0, 6).map((tech, idx) => (
+                      <span
+                        key={`${tech}-${idx}`}
+                        className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] sm:text-xs font-semibold rounded-full border border-white/10 bg-white/5 text-slate-100"
+                      >
+                        <Tag className="w-3 h-3 text-[#3be3ff]" />
+                        {tech}
+                      </span>
+                    ))}
                   </div>
-                </div>
+                )}
+
+                <h1 className="mt-4 text-[clamp(24px,8vw,44px)] sm:text-[clamp(34px,3.4vw,56px)] font-semibold text-white leading-[1.05] sm:leading-tight">
+                  {localizedTitle}
+                </h1>
+
+                {(localizedSummary || '').trim() && (
+                  <p className="mt-2 text-sm sm:text-lg text-slate-200/85 leading-relaxed line-clamp-2">
+                    {localizedSummary}
+                  </p>
+                )}
               </div>
 
               <div className="px-6 sm:px-8 pb-7 pt-6 bg-[#101a2f]/55 border-t border-white/5">
@@ -700,7 +720,7 @@ export default function ProjectDetail() {
                 <section
                   key={sectionId}
                   id={sectionId}
-                  className={`bg-[#101a2f]/70 border border-white/5 rounded-3xl p-6 shadow-lg shadow-black/20 transition ${
+                  className={`bg-[#101a2f]/70 border border-white/5 -mx-4 max-[390px]:-mx-3 sm:mx-0 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-lg shadow-black/20 transition ${
                     highlightSection === sectionId ? 'ring-2 ring-[#3be3ff]/30' : ''
                   }`}
                 >

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { ChevronDown, Github, Linkedin } from 'lucide-react';
+import { ChevronDown, Github, Linkedin, Menu, X } from 'lucide-react';
 import { useSiteRuntime } from '../lib/siteRuntime';
 
 const navLinkBase =
@@ -16,6 +16,8 @@ export default function Navbar() {
   const { site, languages, language, setLanguage, t } = useSiteRuntime();
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const langMenuRef = useRef<HTMLDivElement | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
 
   const brand = t(site.navbar?.brand);
   const navHome = t(site.navbar?.nav_home);
@@ -49,6 +51,48 @@ export default function Navbar() {
       window.removeEventListener('pointerdown', onPointerDown);
     };
   }, [langMenuOpen]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileMenuOpen(false);
+    };
+
+    const onPointerDown = (e: MouseEvent | PointerEvent) => {
+      const el = mobileMenuRef.current;
+      if (!el) return;
+      if (e.target instanceof Node && el.contains(e.target)) return;
+      setMobileMenuOpen(false);
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('pointerdown', onPointerDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('pointerdown', onPointerDown);
+    };
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    const onOverlay = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { source?: string; open?: boolean } | undefined;
+      if (!detail) return;
+      if (detail.source === 'toc' && detail.open) setMobileMenuOpen(false);
+    };
+
+    window.addEventListener('codefolio:overlay', onOverlay as EventListener);
+    return () => window.removeEventListener('codefolio:overlay', onOverlay as EventListener);
+  }, []);
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen((v) => {
+      const next = !v;
+      window.dispatchEvent(new CustomEvent('codefolio:overlay', { detail: { source: 'nav', open: next } }));
+      return next;
+    });
+    setLangMenuOpen(false);
+  };
 
   const languageSelector =
     languages.length === 2 ? (
@@ -112,56 +156,140 @@ export default function Navbar() {
       </div>
     ) : null;
 
+  const mobileLanguageSelector =
+    languages.length > 0 ? (
+      <div className="px-2 pb-2">
+        <div className="text-xs uppercase tracking-[0.2em] text-slate-400 px-2 pt-2 pb-1">Language</div>
+        <div className="flex flex-wrap gap-2 px-2 pb-2">
+          {languages.map((l) => {
+            const active = l.code === language;
+            return (
+              <button
+                key={l.code}
+                type="button"
+                onClick={() => setLanguage(l.code)}
+                className={`px-3 py-1.5 rounded-full text-sm border transition ${
+                  active ? 'bg-[#3be3ff] text-slate-950 border-transparent font-semibold' : 'border-white/10 bg-white/5 text-slate-100 hover:bg-white/10'
+                }`}
+              >
+                {l.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    ) : null;
+
   return (
     <header id="site-header" className="sticky top-0 z-40 w-full border-b border-white/5 bg-[#0c1324]/70 backdrop-blur">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-3 flex flex-wrap items-center justify-between gap-2 sm:gap-4">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-3 flex items-center justify-between gap-3">
         <Link
           to="/"
-          className="text-white font-semibold tracking-tight text-base sm:text-lg md:text-xl relative shrink-0 max-w-[60vw] truncate"
+          className="min-w-0 text-white font-semibold tracking-tight text-base sm:text-lg md:text-xl relative truncate"
         >
           {brand || 'Codefolio'}
           <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-[#3be3ff] opacity-70"></span>
         </Link>
 
-        <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3 max-[360px]:w-full max-[360px]:justify-start">
-          <NavLink
-            to="/"
-            end
-            className={({ isActive }) =>
-              `${navLinkBase} ${isActive ? navLinkActive : navLinkInactive}`
-            }
-          >
-            {navHome || 'Home'}
-          </NavLink>
-          <NavLink
-            to="/projects"
-            className={({ isActive }) =>
-              `${navLinkBase} ${isActive ? navLinkActive : navLinkInactive}`
-            }
-          >
-            {navProjects || 'Projects'}
-          </NavLink>
-          <span className="text-white/15 max-[360px]:hidden">|</span>
-          <a
-            href={githubUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-slate-300 hover:text-white transition"
-            aria-label="GitHub"
-          >
-            <Github className="w-4 h-4 sm:w-5 sm:h-5" />
-          </a>
-          <a
-            href={linkedinUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-slate-300 hover:text-white transition"
-            aria-label="LinkedIn"
-          >
-            <Linkedin className="w-4 h-4 sm:w-5 sm:h-5" />
-          </a>
+        <div className="flex items-center justify-end gap-2 sm:gap-3 shrink-0">
+          <div className="hidden sm:flex items-center gap-2 sm:gap-3">
+            <NavLink
+              to="/"
+              end
+              className={({ isActive }) =>
+                `${navLinkBase} ${isActive ? navLinkActive : navLinkInactive}`
+              }
+            >
+              {navHome || 'Home'}
+            </NavLink>
+            <NavLink
+              to="/projects"
+              className={({ isActive }) =>
+                `${navLinkBase} ${isActive ? navLinkActive : navLinkInactive}`
+              }
+            >
+              {navProjects || 'Projects'}
+            </NavLink>
+            <span className="text-white/15">|</span>
+          </div>
 
-          {languageSelector}
+          <div className="flex items-center">
+            <a
+              href={githubUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full text-slate-300 hover:text-white hover:bg-white/10 transition active:scale-[0.98]"
+              aria-label="GitHub"
+            >
+              <Github className="w-5 h-5" />
+            </a>
+            <a
+              href={linkedinUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full text-slate-300 hover:text-white hover:bg-white/10 transition active:scale-[0.98]"
+              aria-label="LinkedIn"
+            >
+              <Linkedin className="w-5 h-5" />
+            </a>
+          </div>
+
+          <div className="hidden sm:block">{languageSelector}</div>
+
+          <div ref={mobileMenuRef} className="relative sm:hidden">
+            <button
+              type="button"
+              onClick={toggleMobileMenu}
+              className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-white/10 bg-white/5 text-slate-100 hover:bg-white/10 transition active:scale-[0.98]"
+              aria-label="Menu"
+              aria-haspopup="dialog"
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+
+            {mobileMenuOpen && (
+              <div className="fixed inset-0 z-50 sm:hidden">
+                <div
+                  className="absolute inset-0 bg-black/30"
+                  role="button"
+                  tabIndex={-1}
+                  aria-label="Close menu"
+                  onClick={() => toggleMobileMenu()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') toggleMobileMenu();
+                  }}
+                />
+
+                <div className="absolute right-4 top-16 w-[min(22rem,calc(100vw-2rem))] rounded-3xl border border-white/10 bg-[#0b1221]/95 backdrop-blur shadow-2xl shadow-black/40 overflow-hidden">
+                  <div className="py-2" role="menu" aria-label="Navigation">
+                    <NavLink
+                      to="/"
+                      end
+                      onClick={() => toggleMobileMenu()}
+                      className={({ isActive }) =>
+                        `block px-4 py-2.5 text-sm transition ${isActive ? 'bg-white/10 text-white font-semibold' : 'text-slate-200 hover:bg-white/5'}`
+                      }
+                    >
+                      {navHome || 'Home'}
+                    </NavLink>
+                    <NavLink
+                      to="/projects"
+                      onClick={() => toggleMobileMenu()}
+                      className={({ isActive }) =>
+                        `block px-4 py-2.5 text-sm transition ${isActive ? 'bg-white/10 text-white font-semibold' : 'text-slate-200 hover:bg-white/5'}`
+                      }
+                    >
+                      {navProjects || 'Projects'}
+                    </NavLink>
+                  </div>
+
+                  <div className="border-t border-white/10" />
+                  {mobileLanguageSelector}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>

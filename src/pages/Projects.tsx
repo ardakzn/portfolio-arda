@@ -120,9 +120,9 @@ export default function Projects() {
                 >
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition bg-gradient-to-br from-[#3be3ff]/10 to-[#f9b234]/10"></div>
 
-                  <div className="relative z-10 flex flex-col flex-1 transition duration-200 group-hover:blur-[1px] group-hover:brightness-90">
-                    {hasMedia && (
-                      <div className="relative h-[62%] md:h-[58%] overflow-hidden">
+                    <div className="relative z-10 flex flex-col flex-1 transition duration-200 group-hover:blur-[1px] group-hover:brightness-90">
+                      {hasMedia && (
+                      <div className="relative w-full pt-[56.25%] md:pt-0 md:h-[58%] overflow-hidden">
                         <div className="absolute inset-0" style={{ backgroundImage: mediaFallbackGradient }} />
 
                         {!videoSrc && imageSrc && (
@@ -180,17 +180,33 @@ export default function Projects() {
                       </div>
                     )}
 
-                    <div className={`relative ${hasMedia ? 'p-4 md:flex-[1]' : 'p-6'} ${summary || tech.length > 0 ? 'space-y-3' : 'space-y-2'}`}>
-                      <h3 className={`font-semibold text-white group-hover:text-[#3be3ff] transition-colors ${hasMedia ? 'text-xl' : 'text-2xl'}`}>
+                    <div
+                      className={`relative ${hasMedia ? 'p-2.5 sm:p-4 md:flex-[1]' : 'p-5 sm:p-6'} ${
+                        summary || tech.length > 0 ? 'space-y-2 sm:space-y-2.5' : 'space-y-2'
+                      }`}
+                    >
+                      <h3
+                        className={`font-semibold text-white group-hover:text-[#3be3ff] transition-colors ${
+                          hasMedia ? 'text-[17px] leading-tight sm:text-xl' : 'text-xl sm:text-2xl'
+                        }`}
+                      >
                         {title}
                       </h3>
-                      {summary && <p className={`text-slate-300 leading-relaxed ${hasMedia ? 'text-sm line-clamp-2' : 'line-clamp-3'}`}>{summary}</p>}
+                      {summary && (
+                        <p
+                          className={`text-slate-300 leading-relaxed ${
+                            hasMedia ? 'text-[12px] sm:text-sm line-clamp-1 sm:line-clamp-2' : 'text-sm line-clamp-3'
+                          }`}
+                        >
+                          {summary}
+                        </p>
+                      )}
                       {tech.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1.5 sm:gap-2">
                           {tech.map((techItem, techIdx) => (
                             <span
                               key={`${techItem}-${techIdx}`}
-                              className="px-3 py-1 text-xs font-semibold rounded-full border border-white/10"
+                              className="px-2 py-0.5 text-[10px] sm:text-xs font-semibold rounded-full border border-white/10"
                               style={{
                                 color: techIdx % 2 === 0 ? '#3be3ff' : '#f9b234',
                                 borderColor: techIdx % 2 === 0 ? '#3be3ff33' : '#f9b23433',

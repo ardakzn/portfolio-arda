@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, ArrowRight, Code2, Sparkles, X, FileDown } from 'lucide-react';
 import Navbar from '../components/Navbar';
@@ -37,6 +37,18 @@ export default function Home() {
   const carouselTimerRef = useRef<number | null>(null);
   const featuredVideoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
   const pendingRestartSlugRef = useRef<string | null>(null);
+  const [mobileFeaturedOverlay, setMobileFeaturedOverlay] = useState(true);
+  const mobileOverlayTimerRef = useRef<number | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const featuredSwipeRef = useRef<{
+    pointerId: number | null;
+    startX: number;
+    startY: number;
+    lastX: number;
+    lastY: number;
+    moved: boolean;
+  }>({ pointerId: null, startX: 0, startY: 0, lastX: 0, lastY: 0, moved: false });
+  const suppressFeaturedClickRef = useRef(false);
 
   useEffect(() => {
     const load = async () => {
@@ -64,6 +76,27 @@ export default function Home() {
     };
     void load();
   }, []);
+
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 639px)');
+    const update = () => setIsMobile(mql.matches);
+    update();
+    mql.addEventListener('change', update);
+    return () => mql.removeEventListener('change', update);
+  }, []);
+
+  const armMobileOverlay = (ms = 2200) => {
+    if (mobileOverlayTimerRef.current) {
+      window.clearTimeout(mobileOverlayTimerRef.current);
+      mobileOverlayTimerRef.current = null;
+    }
+
+    setMobileFeaturedOverlay(true);
+    mobileOverlayTimerRef.current = window.setTimeout(() => {
+      setMobileFeaturedOverlay(false);
+      mobileOverlayTimerRef.current = null;
+    }, ms);
+  };
 
   useEffect(() => {
     for (const key of Object.keys(placeholderTimersRef.current)) {
@@ -115,6 +148,13 @@ export default function Home() {
       }
     };
   }, [carouselPaused, featured.length, slideIndex]);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    if (featured.length === 0) return;
+    armMobileOverlay(2200);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobile, slideIndex, featured.length]);
 
   useEffect(() => {
     if (slideIndex >= featured.length) setSlideIndex(0);
@@ -184,6 +224,71 @@ export default function Home() {
     setCarouselPaused(false);
   };
 
+  const onFeaturedPointerDown: React.PointerEventHandler<HTMLDivElement> = (e) => {
+    if (featured.length <= 1) return;
+    if (e.button !== 0) return;
+    if (e.pointerType === 'mouse') return;
+
+    if (isMobile) armMobileOverlay(10_000);
+
+    featuredSwipeRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      lastX: e.clientX,
+      lastY: e.clientY,
+      moved: false,
+    };
+
+    pauseCarousel();
+    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+  };
+
+  const onFeaturedPointerMove: React.PointerEventHandler<HTMLDivElement> = (e) => {
+    const s = featuredSwipeRef.current;
+    if (s.pointerId !== e.pointerId) return;
+    s.lastX = e.clientX;
+    s.lastY = e.clientY;
+
+    const dx = s.lastX - s.startX;
+    const dy = s.lastY - s.startY;
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+
+    if (!s.moved) {
+      if (absX < 10) return;
+      if (absX <= absY) return;
+      s.moved = true;
+      suppressFeaturedClickRef.current = true;
+      window.setTimeout(() => {
+        suppressFeaturedClickRef.current = false;
+      }, 350);
+    }
+
+    if (s.moved) e.preventDefault();
+  };
+
+  const onFeaturedPointerUp: React.PointerEventHandler<HTMLDivElement> = (e) => {
+    const s = featuredSwipeRef.current;
+    if (s.pointerId !== e.pointerId) return;
+
+    const dx = s.lastX - s.startX;
+    const dy = s.lastY - s.startY;
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+
+    featuredSwipeRef.current.pointerId = null;
+    resumeCarousel();
+
+    if (isMobile) armMobileOverlay(900);
+
+    if (!s.moved) return;
+    if (absX < 50 || absX <= absY) return;
+
+    if (dx > 0) setSlideIndex((i) => (i - 1 + featured.length) % featured.length);
+    else setSlideIndex((i) => (i + 1) % featured.length);
+  };
+
   useEffect(() => {
     if (!cvOpen) return;
     const handleEsc = (e: KeyboardEvent) => {
@@ -234,25 +339,48 @@ export default function Home() {
         {featured.length > 0 && (
           <section className="space-y-3">
             <div
-              className="group relative w-full overflow-hidden rounded-3xl bg-[#0f172a]/80 shadow-2xl shadow-black/30"
+              className="group relative w-screen sm:w-full left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 overflow-hidden rounded-3xl bg-[#0f172a]/80 shadow-2xl shadow-black/30"
               onMouseEnter={pauseCarousel}
               onMouseLeave={resumeCarousel}
               onFocusCapture={pauseCarousel}
               onBlurCapture={resumeCarousel}
             >
-              <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div
+                className={`pointer-events-none absolute inset-0 transition-opacity duration-300 ${
+                  isMobile ? (mobileFeaturedOverlay ? 'opacity-100' : 'opacity-0') : 'opacity-0 sm:group-hover:opacity-100'
+                }`}
+              >
                 <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
               </div>
 
-              <div className="flex transition-transform duration-700 ease-in-out" style={{ transform: `translateX(-${slideIndex * 100}%)` }}>
-                {featured.map((item) => (
-                  <Link key={item.slug} to={`/project/${item.slug}`} className="group relative min-w-full h-[360px] md:h-[420px] block">
+              <div
+                className="flex w-full transition-transform duration-700 ease-in-out touch-pan-y will-change-transform"
+                style={{ transform: `translate3d(-${slideIndex * 100}%, 0, 0)` }}
+                onPointerDown={onFeaturedPointerDown}
+                onPointerMove={onFeaturedPointerMove}
+                onPointerUp={onFeaturedPointerUp}
+                onPointerCancel={onFeaturedPointerUp}
+              >
+                {featured.map((item, itemIdx) => (
+                  <Link
+                    key={item.slug}
+                    to={`/project/${item.slug}`}
+                    onClick={(e) => {
+                      if (!suppressFeaturedClickRef.current) return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    className={[
+                      'group relative flex-none w-full pt-[68%] sm:pt-0 sm:h-[360px] md:h-[420px] block overflow-hidden',
+                      itemIdx === 0 ? '' : '-ml-px',
+                    ].join(' ')}
+                  >
                     <div className="absolute inset-0" style={{ backgroundImage: featuredFallbackGradient }} />
                     {!item.video && item.image && (
                       <img
                         src={item.image}
                         alt={t(item.project.title)}
-                        className="absolute inset-0 w-full h-full object-cover"
+                        className="absolute inset-0 w-full h-full object-cover transform-gpu scale-[1.08] sm:scale-100"
                         onError={(e) => {
                           (e.currentTarget as HTMLImageElement).style.display = 'none';
                         }}
@@ -268,7 +396,7 @@ export default function Home() {
                         playsInline
                         loop
                         preload="metadata"
-                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${
+                        className={`absolute inset-0 w-full h-full object-cover transform-gpu scale-[1.08] sm:scale-100 transition-opacity duration-200 ${
                           featuredVideoReady[item.slug] ? 'opacity-100' : 'opacity-0'
                         }`}
                         onLoadedData={(e) => markFeaturedVideoReady(item.slug, e.currentTarget)}
@@ -300,19 +428,39 @@ export default function Home() {
                       </div>
                     )}
 
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-t from-[#060b16]/85 via-[#060b16]/35 to-transparent"></div>
+                    <div
+                      className={`absolute inset-0 transition-opacity duration-300 bg-gradient-to-t from-[#060b16]/85 via-[#060b16]/35 to-transparent ${
+                        isMobile ? (mobileFeaturedOverlay ? 'opacity-100' : 'opacity-0') : 'opacity-0 sm:group-hover:opacity-100'
+                      }`}
+                    ></div>
                     <div className="absolute inset-0 flex items-end">
-                        <div className="p-6 md:p-8 space-y-3 max-w-2xl">
-                          <h3 className="text-3xl md:text-4xl font-semibold text-white opacity-0 translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
+                      <div className="p-4 sm:p-6 md:p-8 space-y-2.5 max-w-2xl">
+                        <h3
+                          className={`text-2xl sm:text-3xl md:text-4xl leading-tight font-semibold text-white transition-all duration-300 ${
+                            isMobile
+                              ? mobileFeaturedOverlay
+                                ? 'opacity-100 translate-y-0'
+                                : 'opacity-0 translate-y-1 pointer-events-none'
+                              : 'opacity-0 translate-y-2 sm:group-hover:opacity-100 sm:group-hover:translate-y-0'
+                          }`}
+                        >
                           {t(item.project.title)}
                         </h3>
-                        <div className="opacity-0 translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
-                          <p className="text-sm text-slate-200/90 line-clamp-2">{t(item.project.summary)}</p>
-                          <div className="flex flex-wrap gap-2 mt-3">
+                        <div
+                          className={`transition-all duration-300 ${
+                            isMobile
+                              ? mobileFeaturedOverlay
+                                ? 'opacity-100 translate-y-0'
+                                : 'opacity-0 translate-y-1 pointer-events-none'
+                              : 'opacity-0 translate-y-2 sm:group-hover:opacity-100 sm:group-hover:translate-y-0'
+                          }`}
+                        >
+                          <p className="text-xs sm:text-sm text-slate-200/90 line-clamp-2">{t(item.project.summary)}</p>
+                          <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2.5 sm:mt-3">
                             {item.tags.map((tag) => (
                               <span
                                 key={tag}
-                                className="px-3 py-1 text-xs font-semibold rounded-full border border-white/10 text-[#3be3ff] bg-[#3be3ff]/10"
+                                className="px-2.5 py-0.5 text-[11px] sm:px-3 sm:py-1 sm:text-xs font-semibold rounded-full border border-white/10 text-[#3be3ff] bg-[#3be3ff]/10"
                               >
                                 {tag}
                               </span>
@@ -397,7 +545,7 @@ export default function Home() {
                 <Code2 className="w-5 h-5 text-[#3be3ff]" />
               </div>
               <div className="p-6 space-y-3 text-sm text-slate-200 leading-relaxed">
-                {aboutLines.length > 0 ? aboutLines.map((line, idx) => <p key={idx}>• {line}</p>) : <p className="text-slate-400">—</p>}
+                {aboutLines.length > 0 ? aboutLines.map((line, idx) => <p key={idx}>ÔÇó {line}</p>) : <p className="text-slate-400">ÔÇö</p>}
               </div>
             </div>
           </div>
@@ -448,7 +596,7 @@ export default function Home() {
                 {pdfStatus === 'loading' && (
                   <div className="w-full h-full flex items-center justify-center text-slate-300 text-sm gap-2">
                     <span className="inline-block w-4 h-4 rounded-full border-2 border-white/20 border-t-[#f9b234] animate-spin"></span>
-                    {t(site.home?.cv_modal_loading) || 'Loading PDF…'}
+                    {t(site.home?.cv_modal_loading) || 'Loading PDFÔÇĞ'}
                   </div>
                 )}
                 {pdfStatus === 'ready' && (
