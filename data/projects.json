@@ -1,0 +1,143 @@
+[
+  {
+    "id": "proj_demo_hero",
+    "title": { "en": "Cinematic Hero Showcase", "tr": "Sinematik Hero Vitrini" },
+    "slug": "cinematic-hero-showcase",
+    "summary": {
+      "en": "Example hero section with video + date + minimal tags.",
+      "tr": "Video + tarih + minimal etiketlerle hero bölümü örneği."
+    },
+    "description": {
+      "en": "This project exists to showcase the **hero video** layout. Below, RichText markdown also works.\n\n##! Note: Hidden heading (not in TOC)\nThis heading is visible on the page but hidden from the Contents list.\n\n## Link\n[Back to projects](/projects)\n",
+      "tr": "Bu proje özellikle **hero video** tasarımını göstermek için var. Aşağıda RichText markdown da çalışıyor.\n\n##! Not: Gizli başlık (TOC'a girmez)\nBu başlık sayfada görünür ama Contents listesine eklenmez.\n\n## Link\n[Projeler listesine dön](/projects)\n"
+    },
+    "tech_stack": ["Vite", "React", "TypeScript", "Tailwind CSS"],
+    "featured": true,
+    "order_index": 0,
+    "created_at": "2026-01-10T00:00:00.000Z",
+    "updated_at": "2026-01-10T00:00:00.000Z",
+    "thumbnail_video_url": "/assets/video/test.mp4",
+    "thumbnail_image_url": "/assets/image/sample-component.svg"
+  },
+  {
+    "id": "proj_demo_markdown",
+    "title": { "en": "Media-Rich Markdown Playground", "tr": "Medya Zengin Markdown Playground" },
+    "slug": "media-rich-markdown-playground",
+    "summary": {
+      "en": "Carousel, caption, GIF, link and YouTube embed via RichText.",
+      "tr": "Carousel, caption, GIF, link ve YouTube embed gibi RichText özellikleri."
+    },
+    "description": {
+      "en": "## Overview\nThis page exercises the RichText/Markdown capabilities.\n\n## Carousel (multiple images)\n![Arch diagram](/assets/image/sample-arch.svg)\n![Component diagram](/assets/image/sample-component.svg)\n![Sample GIF](/assets/gif/sample2.gif)\n\n## Single image + caption\n![UI state flow](/assets/image/sample-component-2.svg)\n\n## Link\n[YouTube home](https://youtube.com)\n\n## Video\n@youtube(https://www.youtube.com/watch?v=dQw4w9WgXcQ)\n",
+      "tr": "## Genel\nBu sayfa RichText/Markdown kapasitesini test eder.\n\n## Carousel (birden fazla görsel)\n![Arch diagram](/assets/image/sample-arch.svg)\n![Component diagram](/assets/image/sample-component.svg)\n![Sample GIF](/assets/gif/sample2.gif)\n\n## Tek görsel + caption\n![UI state flow](/assets/image/sample-component-2.svg)\n\n## Link\n[YouTube ana sayfa](https://youtube.com)\n\n## Video\n@youtube(https://www.youtube.com/watch?v=dQw4w9WgXcQ)\n"
+    },
+    "content_blocks": [
+      {
+        "id": "blk_markdown_1",
+        "title": { "en": "Embeds", "tr": "Embed'ler" },
+        "content": {
+          "en": "## @snippet\nEmbed global snippets inside markdown by writing `@snippet(id, caption)`.\n\n@snippet(snip_markdown_embed, Embed parsing logic)\n\n##! Hidden heading (not in TOC)\nThis heading is visible on the page but hidden from the Contents list.",
+          "tr": "## @snippet\nMarkdown içine `@snippet(id, caption)` yazarak global snippet embed edebilirsin.\n\n@snippet(snip_markdown_embed, Embed parsing mantığı)\n\n##! Gizli bölüm başlığı (TOC'a girmez)\nBu başlık sayfada görünür ama Contents listesinde görünmez."
+        },
+        "order_index": 0,
+        "created_at": "2026-01-10T00:00:00.000Z",
+        "updated_at": "2026-01-10T00:00:00.000Z"
+      }
+    ],
+    "tech_stack": ["Markdown", "RichText", "Embeds"],
+    "featured": true,
+    "order_index": 1,
+    "created_at": "2026-01-10T00:00:00.000Z",
+    "updated_at": "2026-01-10T00:00:00.000Z",
+    "thumbnail_video_url": "/assets/video/test.mp4",
+    "thumbnail_image_url": "/assets/image/sample-arch.svg"
+  },
+  {
+    "id": "proj_demo_snippets",
+    "title": { "en": "Annotated Code Walkthrough", "tr": "Anotasyonlu Kod İncelemesi" },
+    "slug": "annotated-code-walkthrough",
+    "summary": {
+      "en": "Snippet embed + annotations (tooltip + detail) demo.",
+      "tr": "Snippet embed + annotation sistemi (tooltip + detail) için örnek proje."
+    },
+    "description": {
+      "en": "## Overview\nThis project demonstrates the **interactive code viewer** and **annotation** system.\n\n## Frontend snippet\n@snippet(snip_fancy_button, FancyButton: small, readable example)\n",
+      "tr": "## Genel\nBu proje, **interactive code viewer** ve **annotation** özelliklerini göstermek için var.\n\n## Frontend snippet\n@snippet(snip_fancy_button, FancyButton: küçük, okunaklı bir örnek)\n"
+    },
+    "content_blocks": [
+      {
+        "id": "blk_snip_1",
+        "title": { "en": "Embed Parsing", "tr": "Embed Parsing" },
+        "content": {
+          "en": "## @snippet embed parsing\nThis block shows the `@snippet(id, caption)` parsing logic used by RichText.\n\n@snippet(snip_markdown_embed, Parsing `@snippet(...)` lines)\n",
+          "tr": "## @snippet embed parsing\nBu blok, RichText içinde kullanılan `@snippet(id, caption)` parsing mantığını gösterir.\n\n@snippet(snip_markdown_embed, `@snippet(...)` satırlarını parse etme)\n"
+        },
+        "order_index": 0,
+        "created_at": "2026-01-10T00:00:00.000Z",
+        "updated_at": "2026-01-10T00:00:00.000Z"
+      },
+      {
+        "id": "blk_snip_2",
+        "title": { "en": "Microservices (TypeScript)", "tr": "Microservices (TypeScript)" },
+        "content": {
+          "en": "## Contract & versioning\nA quick look at versioned event contracts and validation.\n\n@snippet(snip_microservice_contract, Contract + schema example)\n",
+          "tr": "## Contract & versioning\nVersion'lı event contract ve validation yaklaşımı.\n\n@snippet(snip_microservice_contract, Contract + schema örneği)\n"
+        },
+        "order_index": 1,
+        "created_at": "2026-01-10T00:00:00.000Z",
+        "updated_at": "2026-01-10T00:00:00.000Z"
+      }
+    ],
+    "tech_stack": ["Snippets", "Annotations", "Docs-style"],
+    "featured": false,
+    "order_index": 2,
+    "created_at": "2026-01-10T00:00:00.000Z",
+    "updated_at": "2026-01-10T00:00:00.000Z",
+    "thumbnail_video_url": "/assets/video/test.mp4",
+    "thumbnail_image_url": "/assets/image/sample-component.svg"
+  },
+  {
+    "id": "proj_demo_case_study",
+    "title": { "en": "Docs-Style Case Study (TOC + Blocks)", "tr": "Docs-Style Case Study (TOC + Bloklar)" },
+    "slug": "docs-style-case-study",
+    "summary": {
+      "en": "Content blocks + docs-like Contents/TOC navigation demo.",
+      "tr": "Content block sistemi + docs benzeri Contents/TOC deneyimi için örnek."
+    },
+    "description": {
+      "en": "## Problem\nThis project shows how **hero + content blocks** can feel like a docs page.\n\n### Goals\n- Quick navigation via TOC\n- Auto TOC from `##/###`\n- Hide headings from TOC via `##!`\n\n##! Side note (hidden)\nThis section is visible on the page but not listed.\n",
+      "tr": "## Problem\nBu proje, **hero + content blocks** yapısının docs gibi çalışmasını göstermek için var.\n\n### Hedef\n- Sol TOC ile hızlı gezinme\n- `##/###` başlıklardan otomatik TOC üretimi\n- `##!` ile başlığı TOC'tan gizleme\n\n##! Özel not (TOC'ta görünmez)\nBu bölüm yalnızca sayfada görünür.\n"
+    },
+    "content_blocks": [
+      {
+        "id": "blk_case_1",
+        "title": { "en": "Architecture", "tr": "Mimari" },
+        "content": {
+          "en": "## Overview\n![Architecture](/assets/image/sample-arch.svg)\n\n### Data flow\nA small nested heading example.\n\n## Components\n![Component diagram](/assets/image/sample-component.svg)",
+          "tr": "## Overview\n![Architecture](/assets/image/sample-arch.svg)\n\n### Data flow\nAlt başlık hiyerarşisi örneği.\n\n## Components\n![Component diagram](/assets/image/sample-component.svg)"
+        },
+        "order_index": 0,
+        "created_at": "2026-01-10T00:00:00.000Z",
+        "updated_at": "2026-01-10T00:00:00.000Z"
+      },
+      {
+        "id": "blk_case_2",
+        "title": { "en": "Implementation", "tr": "Uygulama" },
+        "content": {
+          "en": "## API contract\n@snippet(snip_microservice_contract, Simple contract + validation)\n\n##! Notes (hidden)\nThis heading is hidden from the TOC.\n\n## Video\n@youtube(https://www.youtube.com/watch?v=dQw4w9WgXcQ)",
+          "tr": "## API contract\n@snippet(snip_microservice_contract, Basit contract + validation)\n\n##! Notlar (TOC'a girmez)\nBu başlık Contents listesinde görünmez.\n\n## Video\n@youtube(https://www.youtube.com/watch?v=dQw4w9WgXcQ)"
+        },
+        "order_index": 1,
+        "created_at": "2026-01-10T00:00:00.000Z",
+        "updated_at": "2026-01-10T00:00:00.000Z"
+      }
+    ],
+    "tech_stack": ["Content blocks", "TOC", "RichText"],
+    "featured": false,
+    "order_index": 3,
+    "created_at": "2026-01-10T00:00:00.000Z",
+    "updated_at": "2026-01-10T00:00:00.000Z",
+    "thumbnail_video_url": "/assets/video/test.mp4",
+    "thumbnail_image_url": "/assets/image/sample-arch.svg"
+  }
+]
