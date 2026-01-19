@@ -17,6 +17,7 @@ import { withBaseUrl } from '../lib/paths';
 type EditorProject = ProjectWithDetails;
 type EditorSnippet = CodeSnippet & { annotations?: CodeAnnotation[] };
 type EditorContentBlock = NonNullable<ProjectWithDetails['content_blocks']>[number];
+type EditorProjectLink = NonNullable<ProjectWithDetails['links']>[number];
 type EditorSite = SiteData;
 
 type SelectionInfo = {
@@ -174,6 +175,18 @@ function normalizePublicPath(input: string): string {
   return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
 }
 
+function normalizeProjectLinks(links: EditorProjectLink[] | undefined): EditorProjectLink[] {
+  return (links || [])
+    .map((link) => {
+      const url = (link?.url || '').trim();
+      if (!url) return null;
+      const label = cleanLocalizedText(link.label || '');
+      const kind = (link.kind || '').trim();
+      return { label, url, ...(kind ? { kind } : {}) };
+    })
+    .filter(Boolean) as EditorProjectLink[];
+}
+
 function escapeRegExp(input: string): string {
   return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -239,12 +252,19 @@ function newProjectTemplate(): EditorProject {
     content_blocks: [],
     thumbnail_image_url: '',
     thumbnail_video_url: '',
+    links: [],
+    period_start: '',
+    period_end: '',
     tech_stack: [],
     featured: false,
     order_index: 0,
     created_at: nowIso(),
     updated_at: nowIso(),
   };
+}
+
+function ensureProjectLinks(project: EditorProject): EditorProject {
+  return { ...project, links: Array.isArray(project.links) ? project.links : [] };
 }
 
 function normalizeProjects(projects: EditorProject[]): EditorProject[] {
@@ -569,7 +589,7 @@ export default function Admin() {
       if (firstId) {
         const first = normalized.find((p) => p.id === firstId) || null;
         if (first) {
-          setForm(first);
+          setForm(ensureProjectLinks(first));
           setTechInput((first.tech_stack || []).join(', '));
         }
       }
@@ -589,7 +609,7 @@ export default function Admin() {
     if (!selectedId) return;
     const p = projects.find((x) => x.id === selectedId) || null;
     if (!p) return;
-    setForm(p);
+    setForm(ensureProjectLinks(p));
     setPendingBlockDeleteId(null);
     setTechInput((p.tech_stack || []).join(', '));
     setAutoSlug(false);
@@ -645,7 +665,7 @@ export default function Admin() {
   const onNew = () => {
     setSelectedId(null);
     const fresh = newProjectTemplate();
-    setForm(fresh);
+    setForm(ensureProjectLinks(fresh));
     setTechInput('');
     setAutoSlug(true);
   };
@@ -724,6 +744,30 @@ export default function Admin() {
     });
   };
 
+  const addProjectLink = () => {
+    setForm((prev) => ({
+      ...prev,
+      links: [...(prev.links || []), { label: '', url: '' }],
+    }));
+  };
+
+  const updateProjectLink = (idx: number, patch: Partial<EditorProjectLink>) => {
+    setForm((prev) => {
+      const links = [...(prev.links || [])];
+      const current = links[idx] || { label: '', url: '' };
+      links[idx] = { ...current, ...patch };
+      return { ...prev, links };
+    });
+  };
+
+  const removeProjectLink = (idx: number) => {
+    setForm((prev) => {
+      const links = [...(prev.links || [])];
+      links.splice(idx, 1);
+      return { ...prev, links };
+    });
+  };
+
   const upsert = () => {
     const titleForValidation = resolveLocalizedText(form.title, siteDefaultLang, siteDefaultLang).trim();
     const slug = form.slug.trim();
@@ -766,6 +810,9 @@ export default function Admin() {
       content_blocks: nextBlocks,
       thumbnail_image_url: (form.thumbnail_image_url || '').trim() || undefined,
       thumbnail_video_url: (form.thumbnail_video_url || '').trim() || undefined,
+      links: normalizeProjectLinks(form.links),
+      period_start: cleanLocalizedText(form.period_start),
+      period_end: cleanLocalizedText(form.period_end),
       tech_stack,
       order_index: derivedOrderIndex,
       updated_at: nowIso(),
@@ -2173,6 +2220,31 @@ export default function Admin() {
                 />
               </label>
 
+              <div className="grid md:grid-cols-2 gap-4 md:col-span-2">
+                <label className="space-y-1">
+                  <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Period start (manual)</div>
+                  <input
+                    value={getTextForLang(form.period_start, projectsEditLang, siteDefaultLang)}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, period_start: setTextForLang(p.period_start, projectsEditLang, siteDefaultLang, e.target.value) }))
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-[#0e1526] border border-white/10 focus:outline-none focus:ring-2 focus:ring-[#3be3ff]/40"
+                    placeholder="2022 or Jan 2022"
+                  />
+                </label>
+                <label className="space-y-1">
+                  <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Period end (manual)</div>
+                  <input
+                    value={getTextForLang(form.period_end, projectsEditLang, siteDefaultLang)}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, period_end: setTextForLang(p.period_end, projectsEditLang, siteDefaultLang, e.target.value) }))
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-[#0e1526] border border-white/10 focus:outline-none focus:ring-2 focus:ring-[#3be3ff]/40"
+                    placeholder="2024 or Present"
+                  />
+                </label>
+              </div>
+
               <label className="space-y-1 md:col-span-2">
                 <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Description *</div>
                 <textarea
@@ -2219,6 +2291,70 @@ export default function Admin() {
                   </div>
                 )}
               </label>
+
+              <div className="space-y-3 md:col-span-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Project links (hero)</div>
+                    <div className="text-xs text-slate-500 mt-1">Optional external links shown in the project hero.</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addProjectLink}
+                    className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition text-sm"
+                  >
+                    Add link
+                  </button>
+                </div>
+
+                {(form.links || []).length === 0 ? (
+                  <div className="rounded-2xl border border-white/10 bg-[#0b1221]/40 p-4 text-sm text-slate-400">
+                    No project links yet.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {(form.links || []).map((link, idx) => (
+                      <div key={`link-${idx}`} className="rounded-2xl border border-white/10 bg-[#0e1526]/70 p-4 space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="text-xs text-slate-400">Link #{idx + 1}</div>
+                          <button
+                            type="button"
+                            onClick={() => removeProjectLink(idx)}
+                            className="text-xs px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition"
+                          >
+                            Remove
+                          </button>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-3">
+                          <label className="space-y-1">
+                            <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Label</div>
+                            <input
+                              value={getTextForLang(link.label, projectsEditLang, siteDefaultLang)}
+                              onChange={(e) =>
+                                updateProjectLink(idx, {
+                                  label: setTextForLang(link.label, projectsEditLang, siteDefaultLang, e.target.value),
+                                })
+                              }
+                              className="w-full px-3 py-2 rounded-xl bg-[#0b1221] border border-white/10 focus:outline-none focus:ring-2 focus:ring-[#3be3ff]/40"
+                              placeholder="Steam page"
+                            />
+                          </label>
+                          <label className="space-y-1">
+                            <div className="text-xs uppercase tracking-[0.2em] text-slate-500">URL</div>
+                            <input
+                              value={link.url || ''}
+                              onChange={(e) => updateProjectLink(idx, { url: e.target.value })}
+                              className="w-full px-3 py-2 rounded-xl bg-[#0b1221] border border-white/10 focus:outline-none focus:ring-2 focus:ring-[#3be3ff]/40"
+                              placeholder="https://store.steampowered.com/..."
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div className="space-y-3 md:col-span-2">
                 <div className="flex items-center justify-between gap-3">

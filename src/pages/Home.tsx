@@ -1,6 +1,6 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, ArrowRight, Code2, Sparkles, X, FileDown } from 'lucide-react';
+import { Mail, ArrowRight, Code2, Sparkles, X, FileDown, ChevronRight } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { loadProjectsList } from '../lib/projects';
@@ -545,7 +545,16 @@ export default function Home() {
                 <Code2 className="w-5 h-5 text-[#3be3ff]" />
               </div>
               <div className="p-6 space-y-3 text-sm text-slate-200 leading-relaxed">
-                {aboutLines.length > 0 ? aboutLines.map((line, idx) => <p key={idx}>ÔÇó {line}</p>) : <p className="text-slate-400">ÔÇö</p>}
+                {aboutLines.length > 0 ? (
+                  aboutLines.map((line, idx) => (
+                    <div key={idx} className="flex items-start gap-2">
+                      <ChevronRight className="w-4 h-4 text-[#3be3ff] mt-0.5" />
+                      <p className="flex-1">{line}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-slate-400">-</p>
+                )}
               </div>
             </div>
           </div>

@@ -8,11 +8,20 @@ export interface Project {
   summary: LocalizedText;
   thumbnail_image_url?: string;
   thumbnail_video_url?: string;
+  links?: ProjectLink[];
+  period_start?: LocalizedText;
+  period_end?: LocalizedText;
   tech_stack: string[];
   featured: boolean;
   order_index: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface ProjectLink {
+  label: LocalizedText;
+  url: string;
+  kind?: string;
 }
 
 export interface ContentBlock {

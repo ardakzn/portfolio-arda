@@ -86,7 +86,9 @@ export default function InteractiveCodeViewer({ snippet, annotations, hideHeader
 
   const getLineClassName = (lineIndex: number): string => {
     const hasAnnotation = annotations.some((a) => a.line_number === lineIndex + 1);
-    return hasAnnotation ? 'cursor-pointer hover:bg-[#f9b234]/10 hover:border-l-2 hover:border-[#f9b234] pl-2 transition-all' : '';
+    return hasAnnotation
+      ? 'cursor-pointer border-l-2 border-[#f9b234] pl-2 bg-[#f9b234]/10 transition-colors hover:bg-[#f9b234]/20'
+      : '';
   };
 
   return (
@@ -166,8 +168,19 @@ export default function InteractiveCodeViewer({ snippet, annotations, hideHeader
       </div>
 
       {selectedAnnotation && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0f172a] border border-white/10 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          role="button"
+          tabIndex={-1}
+          onClick={() => setSelectedAnnotation(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setSelectedAnnotation(null);
+          }}
+        >
+          <div
+            className="bg-[#0f172a] border border-white/10 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="sticky top-0 bg-[#0f172a]/95 backdrop-blur-sm border-b border-white/10 px-6 py-4 flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-1">

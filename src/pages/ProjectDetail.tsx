@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowUp, Calendar, ChevronDown, ChevronRight, Tag } from 'lucide-react';
+import { ArrowLeft, ArrowUp, ArrowUpRight, Calendar, ChevronDown, ChevronRight, Tag } from 'lucide-react';
 import type { ProjectWithDetails } from '../types/portfolio';
 import InteractiveCodeViewer from '../components/InteractiveCodeViewer';
 import Navbar from '../components/Navbar';
@@ -56,7 +56,29 @@ export default function ProjectDetail() {
   const localizedDescription = useMemo(() => (project ? t(project.description) : ''), [project, t]);
   const localizedTitle = useMemo(() => (project ? t(project.title) : ''), [project, t]);
   const localizedSummary = useMemo(() => (project ? t(project.summary) : ''), [project, t]);
-  const dateLocale = language.toLowerCase().startsWith('tr') ? 'tr-TR' : 'en-US';
+  const projectLinks = useMemo(
+    () => (project?.links || []).filter((link) => (link?.url || '').trim().length > 0),
+    [project?.links],
+  );
+  const periodStart = (t(project?.period_start) || '').trim();
+  const periodEnd = (t(project?.period_end) || '').trim();
+  const periodLabel = periodStart && periodEnd ? `${periodStart} - ${periodEnd}` : periodStart || periodEnd;
+
+  const getFaviconUrl = (url: string) => {
+    try {
+      const parsed = new URL(url);
+      return `https://www.google.com/s2/favicons?domain=${parsed.hostname}&sz=32`;
+    } catch {
+      return '';
+    }
+  };
+
+  const resolveProjectUrl = (url: string) => {
+    const trimmed = (url || '').trim();
+    if (!trimmed) return '';
+    if (/^[a-zA-Z]+:\/\//.test(trimmed)) return trimmed;
+    return withBaseUrl(trimmed);
+  };
 
   const toc = useMemo(() => {
     const groupHeadings = (items: { id: string; label: string; level: 2 | 3 }[]) => {
@@ -670,19 +692,53 @@ export default function ProjectDetail() {
               </div>
 
               <div className="px-5 sm:px-8 pt-5 sm:pt-6 pb-4 sm:pb-6 bg-[#0b1221]/65 border-t border-white/5">
-                <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-200/80">
-                  <Calendar className="w-4 h-4 text-slate-300" />
-                  <span>
-                    {new Date(project.created_at).toLocaleDateString(dateLocale, {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                  </span>
-                </div>
+                {(projectLinks.length > 0 || periodLabel) && (
+                  <div className="mt-3 mb-3 flex flex-wrap items-center gap-3">
+                    {projectLinks.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {projectLinks.map((link, idx) => {
+                          const href = resolveProjectUrl(link.url);
+                          const favicon = getFaviconUrl(href);
+                          return (
+                            <a
+                              key={`${link.url}-${idx}`}
+                              href={href}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="group inline-flex items-center gap-2.5 px-3.5 py-2 rounded-xl border border-[#3be3ff]/25 bg-[#0b1221]/70 text-[13px] font-semibold text-slate-100 hover:border-[#3be3ff]/60 hover:bg-[#0f1b33] shadow-[0_6px_18px_rgba(8,15,30,0.35)] transition"
+                            >
+                              <span className="w-7 h-7 rounded-lg bg-[#0f1b33] border border-white/10 flex items-center justify-center">
+                                {favicon ? (
+                                  <img
+                                    src={favicon}
+                                    alt=""
+                                    className="w-4 h-4 rounded-sm"
+                                    onError={(e) => {
+                                      (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                    }}
+                                  />
+                                ) : (
+                                  <ArrowUpRight className="w-4 h-4 text-[#3be3ff]" />
+                                )}
+                              </span>
+                              <span className="max-w-[220px] truncate">{t(link.label) || href}</span>
+                            </a>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {periodLabel && (
+                      <div className="sm:ml-auto inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-white/10 bg-[#0b1221]/55 text-[12px] font-semibold text-slate-200 tracking-[0.08em] uppercase">
+                        <Calendar className="w-4 h-4 text-[#f9b234]" />
+                        <span>{periodLabel}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {(project.tech_stack || []).length > 0 && (
-                  <div className="mt-3 flex flex-nowrap sm:flex-wrap gap-2 overflow-x-auto sm:overflow-visible max-w-full pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <div className="flex flex-nowrap sm:flex-wrap gap-2 overflow-x-auto sm:overflow-visible max-w-full pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     {(project.tech_stack || []).slice(0, 6).map((tech, idx) => (
                       <span
                         key={`${tech}-${idx}`}
