@@ -23,9 +23,7 @@ export function getDefaultSite(): SiteData {
     },
     home: {
       badge: { en: 'Case Studies', tr: 'Öne Çıkan Çalışmalar' },
-      headline: { en: 'Developer-focused,', tr: 'Geliştirici odaklı,' },
-      headline_accent: { en: 'minimal', tr: 'az renkli' },
-      headline_tail: { en: 'portfolio', tr: 'minimal portfolyo' },
+      headline: { en: 'Developer-focused, minimal portfolio', tr: 'Geliştirici odaklı minimal portfolyo' },
       lead: {
         en: 'A portfolio focused on system design and interactive code walkthroughs. Clean visuals, high readability, and strong DX.',
         tr: 'Sistem tasarımı ve interaktif kod anlatımları odaklı bir portfolyo. Temiz görsel dil, yüksek okunabilirlik ve iyi DX.',

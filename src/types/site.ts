@@ -22,8 +22,6 @@ export type SiteData = {
   home: {
     badge: LocalizedString;
     headline: LocalizedString;
-    headline_accent: LocalizedString;
-    headline_tail: LocalizedString;
     lead: LocalizedString;
     cta_projects: LocalizedString;
     cta_cv: LocalizedString;

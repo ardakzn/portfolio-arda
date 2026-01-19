@@ -502,9 +502,7 @@ export default function Home() {
 
             <div className="space-y-4">
               <h1 className="text-4xl md:text-5xl font-semibold leading-tight text-white">
-                {t(site.home?.headline) || 'Developer-focused,'}
-                <br />
-                <span className="text-[#3be3ff]"> {t(site.home?.headline_accent) || 'minimal'}</span> {t(site.home?.headline_tail) || 'portfolio'}
+                {t(site.home?.headline) || 'Developer-focused, minimal portfolio'}
               </h1>
               <p className="text-lg text-slate-300 max-w-2xl leading-relaxed">{t(site.home?.lead)}</p>
             </div>

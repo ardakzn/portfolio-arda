@@ -59,6 +59,7 @@ function parseBlocks(input: string): Block[] {
   let i = 0;
   const consumeParagraph = () => {
     const parts: string[] = [];
+    const startIndex = i;
     while (i < lines.length) {
       const line = lines[i];
       if (!line.trim()) break;
@@ -70,6 +71,10 @@ function parseBlocks(input: string): Block[] {
     }
     const text = parts.join('\n').trim();
     if (text) blocks.push({ type: 'paragraph', text });
+    if (!text && i === startIndex) {
+      // Avoid stalling on incomplete markdown tokens like "## " or "- ".
+      i += 1;
+    }
   };
 
   while (i < lines.length) {

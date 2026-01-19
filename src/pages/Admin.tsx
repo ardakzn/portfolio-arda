@@ -1705,43 +1705,16 @@ export default function Admin() {
                     </label>
                     <label className="space-y-2 md:col-span-2">
                       <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Headline</div>
-                      <div className="grid md:grid-cols-3 gap-3">
-                        <input
-                          value={siteData.home.headline?.[siteEditLang] || ''}
-                          onChange={(e) =>
-                            setSiteData((prev) =>
-                              prev ? { ...prev, home: { ...prev.home, headline: { ...prev.home.headline, [siteEditLang]: e.target.value } } } : prev,
-                            )
-                          }
-                          className="w-full px-4 py-3 rounded-2xl bg-[#0b1221]/60 border border-white/10 text-slate-100 outline-none focus:border-[#3be3ff]/50"
-                          placeholder="Line 1"
-                        />
-                        <input
-                          value={siteData.home.headline_accent?.[siteEditLang] || ''}
-                          onChange={(e) =>
-                            setSiteData((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    home: { ...prev.home, headline_accent: { ...prev.home.headline_accent, [siteEditLang]: e.target.value } },
-                                  }
-                                : prev,
-                            )
-                          }
-                          className="w-full px-4 py-3 rounded-2xl bg-[#0b1221]/60 border border-white/10 text-slate-100 outline-none focus:border-[#3be3ff]/50"
-                          placeholder="Accent"
-                        />
-                        <input
-                          value={siteData.home.headline_tail?.[siteEditLang] || ''}
-                          onChange={(e) =>
-                            setSiteData((prev) =>
-                              prev ? { ...prev, home: { ...prev.home, headline_tail: { ...prev.home.headline_tail, [siteEditLang]: e.target.value } } } : prev,
-                            )
-                          }
-                          className="w-full px-4 py-3 rounded-2xl bg-[#0b1221]/60 border border-white/10 text-slate-100 outline-none focus:border-[#3be3ff]/50"
-                          placeholder="Tail"
-                        />
-                      </div>
+                      <input
+                        value={siteData.home.headline?.[siteEditLang] || ''}
+                        onChange={(e) =>
+                          setSiteData((prev) =>
+                            prev ? { ...prev, home: { ...prev.home, headline: { ...prev.home.headline, [siteEditLang]: e.target.value } } } : prev,
+                          )
+                        }
+                        className="w-full px-4 py-3 rounded-2xl bg-[#0b1221]/60 border border-white/10 text-slate-100 outline-none focus:border-[#3be3ff]/50"
+                        placeholder="Developer-focused, minimal portfolio"
+                      />
                     </label>
                     <label className="space-y-2 md:col-span-2">
                       <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Lead</div>
