@@ -12,6 +12,7 @@ type Block =
   | { type: 'snippet'; id: string; caption?: string }
   | { type: 'youtube'; embedUrl: string }
   | { type: 'list'; items: string[] }
+  | { type: 'spacer'; lines: number }
   | { type: 'paragraph'; text: string };
 
 function isSafeUrl(url: string): boolean {
@@ -82,7 +83,12 @@ function parseBlocks(input: string): Block[] {
     const line = raw.trimEnd();
 
     if (!line.trim()) {
-      i += 1;
+      let blanks = 0;
+      while (i < lines.length && !lines[i].trim()) {
+        blanks += 1;
+        i += 1;
+      }
+      blocks.push({ type: 'spacer', lines: blanks });
       continue;
     }
 
@@ -107,13 +113,20 @@ function parseBlocks(input: string): Block[] {
       i += 1;
 
       // If multiple images appear back-to-back (optionally separated by blank lines),
-      // render them as a lightweight carousel.
+      // render them as a lightweight carousel. Stop at blank lines before non-image content
+      // so we can preserve intentional spacing.
       while (i < lines.length) {
-        const next = lines[i].trim();
-        if (!next) {
-          i += 1;
-          continue;
+        const nextRaw = lines[i];
+        if (!nextRaw.trim()) {
+          let j = i + 1;
+          while (j < lines.length && !lines[j].trim()) j += 1;
+          if (j >= lines.length) break;
+          const nextNonEmpty = lines[j].trim();
+          const nextIsImage = /^!\[([^\]]*)]\(([^)]+)\)\s*$/.test(nextNonEmpty);
+          if (!nextIsImage) break;
+          i = j;
         }
+        const next = lines[i].trim();
         const m = next.match(/^!\[([^\]]*)]\(([^)]+)\)\s*$/);
         if (!m) break;
         pushImg(m);
@@ -572,13 +585,18 @@ export default function RichText({
           );
         }
 
+        if (b.type === 'spacer') {
+          const height = Math.min(b.lines, 6) * (size === 'small' ? 8 : 12);
+          return <div key={idx} style={{ height }} />;
+        }
+
         return (
           <p
             key={idx}
             className={
               size === 'small'
-                ? 'text-xs text-slate-200 leading-relaxed whitespace-pre-wrap'
-                : 'text-sm md:text-base text-slate-300 leading-relaxed whitespace-pre-wrap'
+                ? 'text-xs text-slate-200 leading-relaxed whitespace-pre-wrap mt-3 first:mt-0'
+                : 'text-sm md:text-base text-slate-300 leading-relaxed whitespace-pre-wrap mt-3 first:mt-0'
             }
           >
             {renderInline(b.text, size)}
