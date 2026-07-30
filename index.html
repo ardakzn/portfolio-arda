@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="preload"
+      href="/arda-kozan/assets/fonts/manrope-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/arda-kozan/assets/fonts/manrope-latin-ext.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/arda-kozan/assets/fonts/jetbrains-mono-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/arda-kozan/assets/fonts/jetbrains-mono-latin-ext.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="/arda-kozan/assets/fonts/fonts.css" />
+    <title>Arda Kozan - Portfolio</title>
+    <meta
+      name="description"
+      content="Game developer portfolio featuring Unreal Engine, Unity/C#, multiplayer systems, AI behavior, VR prototypes, and reusable engine tools."
+    />
+    <meta name="app-base" content="/arda-kozan/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Arda Kozan - Portfolio" />
+    <meta
+      property="og:description"
+      content="Unreal Engine and Unity/C# projects, multiplayer systems, gameplay tools, AI behavior, and VR prototypes."
+    />
+    <meta property="og:url" content="https://ardakzn.github.io/arda-kozan/" />
+    <meta property="og:image" content="https://ardakzn.github.io/arda-kozan/assets/portfolio-preview.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Arda Kozan - Portfolio" />
+    <meta
+      name="twitter:description"
+      content="Unreal Engine and Unity/C# projects, multiplayer systems, gameplay tools, AI behavior, and VR prototypes."
+    />
+    <meta name="twitter:image" content="https://ardakzn.github.io/arda-kozan/assets/portfolio-preview.png" />
+    <script type="module" crossorigin src="/arda-kozan/assets/index-DFJ-Rmec.js"></script>
+    <link rel="stylesheet" crossorigin href="/arda-kozan/assets/index-DmhCccqy.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      (function () {
+        var params = new URLSearchParams(window.location.search);
+        var p = params.get('p');
+        if (!p) return;
+
+        var s = params.get('s') || '';
+        var h = params.get('h') || '';
+
+        var baseMeta = document.querySelector('meta[name="app-base"]');
+        var base = (baseMeta && baseMeta.getAttribute('content')) || '/';
+        if (!base.startsWith('/')) base = '/' + base;
+        if (!base.endsWith('/')) base = base + '/';
+
+        var next = base + p.replace(/^\//, '');
+        if (s) next += '?' + s;
+        if (h) next += '#' + h;
+        window.history.replaceState(null, '', next);
+      })();
+    </script>
+  </body>
+</html>

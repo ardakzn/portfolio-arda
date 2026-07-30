@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Arda Kozan - Portfolio Preview</title>
+    <link rel="stylesheet" href="./assets/fonts/fonts.css" />
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: 'Manrope', sans-serif;
+        background: #0d1116;
+        color: #e4e9ed;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 1200px;
+        height: 630px;
+        margin: 0;
+        overflow: hidden;
+      }
+
+      body {
+        position: relative;
+        background:
+          radial-gradient(circle at 19% 20%, rgba(111, 168, 201, 0.13), transparent 34%),
+          linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+          #101418;
+        background-size: auto, 28px 28px, 28px 28px, auto;
+      }
+
+      .frame {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        grid-template-columns: 1.02fr 0.98fr;
+        grid-template-rows: 54px 1fr 86px;
+        column-gap: 52px;
+        padding: 34px 56px 30px;
+      }
+
+      .topbar {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        border-bottom: 1px solid #2c353e;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+
+      .brand-dot {
+        width: 10px;
+        height: 10px;
+        border: 2px solid #6fa8c9;
+        border-radius: 50%;
+      }
+
+      .brand-suffix {
+        color: #6fa8c9;
+      }
+
+      .build-meta {
+        color: #5c6b77;
+        font: 500 10px 'JetBrains Mono', monospace;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .identity {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        justify-content: center;
+        padding: 18px 0 6px;
+      }
+
+      .function {
+        display: inline-flex;
+        width: max-content;
+        max-width: 100%;
+        align-items: center;
+        gap: 9px;
+        border: 1px solid #31526a;
+        border-radius: 8px;
+        background: linear-gradient(90deg, #24455c, #182b38);
+        color: #bcd9ec;
+        font: 600 12px 'JetBrains Mono', monospace;
+        padding: 10px 13px;
+      }
+
+      .function-comment {
+        color: #7fa886;
+      }
+
+      h1 {
+        margin: 30px 0 2px;
+        font-size: 68px;
+        line-height: 0.98;
+        letter-spacing: -0.055em;
+      }
+
+      .role {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 16px;
+        color: #6fa8c9;
+        font: 600 21px 'JetBrains Mono', monospace;
+      }
+
+      .chevron {
+        color: #8dbdd8;
+      }
+
+      .lead {
+        max-width: 520px;
+        margin: 25px 0 0;
+        color: #c3ccd4;
+        font-size: 17px;
+        line-height: 1.55;
+      }
+
+      .skills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+        margin-top: 22px;
+      }
+
+      .skill {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border: 1px solid #2c353e;
+        border-radius: 7px;
+        background: #141a20;
+        color: #c3ccd4;
+        font: 600 10px 'JetBrains Mono', monospace;
+        padding: 8px 10px;
+      }
+
+      .skill-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+      }
+
+      .project-wrap {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        justify-content: flex-end;
+        padding-top: 4px;
+      }
+
+      .project-node {
+        width: 100%;
+        overflow: hidden;
+        border: 1px solid #33404a;
+        border-radius: 12px;
+        background: #141a20;
+        box-shadow: 0 22px 60px rgba(0, 0, 0, 0.48);
+      }
+
+      .node-header {
+        display: flex;
+        min-height: 42px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        background: linear-gradient(90deg, #24455c, #1a2c3a);
+        color: #bcd9ec;
+        font: 600 11px 'JetBrains Mono', monospace;
+        padding: 11px 14px;
+      }
+
+      .node-comment {
+        color: #7fa886;
+      }
+
+      .node-index {
+        color: #8d99a3;
+        font-size: 9px;
+      }
+
+      .project-media {
+        position: relative;
+        height: 286px;
+        overflow: hidden;
+        background: #0d1116;
+      }
+
+      .project-media img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .release {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid rgba(127, 214, 164, 0.55);
+        border-radius: 999px;
+        background: rgba(16, 20, 24, 0.9);
+        color: #7fd6a4;
+        font: 600 9px 'JetBrains Mono', monospace;
+        letter-spacing: 0.08em;
+        padding: 6px 10px;
+      }
+
+      .release-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #7fd6a4;
+      }
+
+      .project-info {
+        display: flex;
+        min-height: 80px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 16px;
+      }
+
+      .project-info h2 {
+        margin: 0;
+        font-size: 18px;
+        letter-spacing: -0.02em;
+      }
+
+      .project-info p,
+      .project-out {
+        margin: 4px 0 0;
+        color: #8d99a3;
+        font: 500 10px 'JetBrains Mono', monospace;
+      }
+
+      .project-out {
+        color: #6fa8c9;
+      }
+
+      .stats {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: repeat(3, max-content) 1fr;
+        align-items: end;
+        gap: 55px;
+        border-top: 1px solid #2c353e;
+        padding-top: 20px;
+      }
+
+      .stat-label {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        color: #8d99a3;
+        font: 500 9px 'JetBrains Mono', monospace;
+        letter-spacing: 0.08em;
+      }
+
+      .stat-label i {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+      }
+
+      .stat strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 27px;
+        line-height: 1;
+      }
+
+      .url {
+        align-self: end;
+        justify-self: end;
+        color: #6fa8c9;
+        font: 600 11px 'JetBrains Mono', monospace;
+      }
+
+    </style>
+  </head>
+  <body>
+    <main class="frame">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-dot"></span>
+          <span id="preview-brand">Arda Kozan</span><span class="brand-suffix">.dev</span>
+        </div>
+        <div class="build-meta">portfolio_preview · compiled ✓</div>
+      </header>
+
+      <section class="identity">
+        <div class="function">
+          <span>ƒ BuildPortfolio()</span>
+          <span class="function-comment">// selected work</span>
+        </div>
+        <h1 id="preview-name">Arda Kozan</h1>
+        <div class="role"><span class="chevron">»</span> game developer_</div>
+        <p class="lead">Gameplay systems, multiplayer flows and reusable engine tools built with Unreal Engine and Unity/C#.</p>
+        <div class="skills">
+          <span class="skill"><i class="skill-dot" style="background:#4ec9b0"></i>Unreal Engine / C++</span>
+          <span class="skill"><i class="skill-dot" style="background:#c9a44e"></i>Unity / C#</span>
+          <span class="skill"><i class="skill-dot" style="background:#c94e6f"></i>Multiplayer</span>
+        </div>
+      </section>
+
+      <section class="project-wrap">
+        <article class="project-node">
+          <div class="node-header">
+            <span>ƒ GetFeaturedProject() <span class="node-comment">// shipped work</span></span>
+            <span class="node-index">index: 01/03</span>
+          </div>
+          <div class="project-media">
+            <img id="preview-project-image" src="./assets/image/fd-preview.webp" alt="" />
+            <span id="preview-release" class="release"><i class="release-dot"></i>LIVE ON STEAM</span>
+          </div>
+          <div class="project-info">
+            <div>
+              <h2 id="preview-project-title">Forks and Daggers</h2>
+              <p id="preview-project-tags">return: Steam · Multiplayer · Unreal Engine</p>
+            </div>
+            <span class="project-out">out ●</span>
+          </div>
+        </article>
+      </section>
+
+      <footer class="stats">
+        <div class="stat">
+          <span class="stat-label"><i style="background:#6fa8c9"></i>YEARS EXPERIENCE</span>
+          <strong id="preview-years">5+</strong>
+        </div>
+        <div class="stat">
+          <span class="stat-label"><i style="background:#4ec9b0"></i>SHIPPED STEAM GAMES</span>
+          <strong id="preview-steam">2</strong>
+        </div>
+        <div class="stat">
+          <span class="stat-label"><i style="background:#c9a44e"></i>PUBLISHED TOOLS</span>
+          <strong id="preview-tools">2</strong>
+        </div>
+        <div class="url">ardakzn.github.io/arda-kozan/</div>
+      </footer>
+    </main>
+    <script>
+      const localized = (value, language = 'en') => {
+        if (typeof value === 'string') return value;
+        if (!value || typeof value !== 'object') return '';
+        return value[language] || value.en || value.tr || Object.values(value).find(Boolean) || '';
+      };
+
+      const projectTags = (project) => {
+        const values = Array.isArray(project?.tags) && project.tags.length > 0 ? project.tags : project?.tech_stack;
+        return Array.isArray(values) ? values.map((tag) => String(tag).trim()).filter(Boolean) : [];
+      };
+
+      const previewAssetUrl = (value) => {
+        const raw = String(value || '').trim();
+        if (!raw) return '';
+        if (/^https?:\/\//i.test(raw)) return raw;
+        return raw.startsWith('/') ? `.${raw}` : raw;
+      };
+
+      const setText = (id, value) => {
+        const element = document.getElementById(id);
+        if (element && value !== undefined && value !== null) element.textContent = String(value);
+      };
+
+      const hydratePreview = async () => {
+        const [siteResponse, projectsResponse] = await Promise.all([
+          fetch('./data/site.json', { cache: 'no-store' }),
+          fetch('./data/projects.json', { cache: 'no-store' }),
+        ]);
+        if (!siteResponse.ok || !projectsResponse.ok) throw new Error('Preview data could not be loaded.');
+
+        const site = await siteResponse.json();
+        const projects = await projectsResponse.json();
+        const projectList = Array.isArray(projects) ? projects : [];
+        const years = Math.max(0, Math.round(Number(site?.home?.years_experience) || 5));
+        const steamCount = projectList.filter((project) =>
+          projectTags(project).some((tag) => tag.toLowerCase() === 'steam'),
+        ).length;
+        const toolCount = projectList.filter((project) =>
+          projectTags(project).some((tag) => ['plugin', 'asset store'].includes(tag.toLowerCase())),
+        ).length;
+        const featuredProject =
+          projectList.find((project) => project?.featured && project?.thumbnail_image_url) ||
+          projectList.find((project) => project?.thumbnail_image_url);
+
+        setText('preview-brand', localized(site?.navbar?.brand));
+        setText('preview-name', localized(site?.home?.headline));
+        setText('preview-years', `${years}+`);
+        setText('preview-steam', steamCount);
+        setText('preview-tools', toolCount);
+
+        if (featuredProject) {
+          const tags = projectTags(featuredProject).slice(0, 3);
+          const image = document.getElementById('preview-project-image');
+          setText('preview-project-title', localized(featuredProject.title));
+          setText('preview-project-tags', `return: ${tags.join(' · ')}`);
+          if (image) image.src = previewAssetUrl(featuredProject.thumbnail_image_url);
+
+          const release = document.getElementById('preview-release');
+          const isSteam = tags.some((tag) => tag.toLowerCase() === 'steam');
+          if (release) release.style.display = isSteam ? 'inline-flex' : 'none';
+        }
+
+        await document.fonts.ready;
+        await Promise.all(
+          [...document.images].map((image) =>
+            image.complete ? Promise.resolve() : image.decode().catch(() => undefined),
+          ),
+        );
+        document.documentElement.dataset.previewReady = 'true';
+      };
+
+      hydratePreview().catch((error) => {
+        document.documentElement.dataset.previewError = error instanceof Error ? error.message : String(error);
+        console.error(error);
+      });
+    </script>
+  </body>
+</html>
