@@ -34,7 +34,7 @@ export function getProjectTags(project: Pick<ProjectWithDetails, 'tags' | 'tech_
 }
 
 export async function loadProjectsFromFile(): Promise<ProjectWithDetails[]> {
-  const res = await fetch(withBaseUrl('/data/projects.json'), { cache: 'no-store' });
+  const res = await fetch(withBaseUrl('/data/projects.json'), { cache: isAdminEnabled() ? 'no-store' : 'default' });
   if (!res.ok) throw new Error('Failed to load projects.json');
   const data: unknown = await res.json();
   const list = Array.isArray(data) ? (data as ProjectWithDetails[]) : [];

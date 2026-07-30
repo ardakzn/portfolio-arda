@@ -107,7 +107,7 @@ export function getDefaultSite(): SiteData {
 }
 
 export async function loadSiteFromFile(): Promise<SiteData> {
-  const res = await fetch(withBaseUrl('/data/site.json'), { cache: 'no-store' });
+  const res = await fetch(withBaseUrl('/data/site.json'), { cache: isAdminEnabled() ? 'no-store' : 'default' });
   if (!res.ok) throw new Error('Failed to load site.json');
   const data: unknown = await res.json();
   if (!data || typeof data !== 'object') throw new Error('Invalid site.json');

@@ -1,10 +1,11 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
-import ProjectDetail from './pages/ProjectDetail';
 import { isAdminEnabled } from './lib/admin';
 import { SiteRuntimeProvider, useSiteRuntime } from './lib/siteRuntime';
 import { routerBasename } from './lib/paths';
+
+const ProjectDetail = lazy(() => import('./pages/ProjectDetail'));
 
 declare global {
   interface Window {
@@ -91,7 +92,20 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/projects" element={<Navigate to="/#projeler" replace />} />
-          <Route path="/project/:slug" element={<ProjectDetail />} />
+          <Route
+            path="/project/:slug"
+            element={
+              <Suspense
+                fallback={
+                  <div className="blueprint-site grid min-h-screen place-items-center">
+                    <span className="font-mono text-xs text-[#6fa8c9]">compiling...</span>
+                  </div>
+                }
+              >
+                <ProjectDetail />
+              </Suspense>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
           {AdminPage && (
             <Route

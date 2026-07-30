@@ -109,14 +109,13 @@ type CardProps = {
 
 function ProjectCard({ project, language, title, summary, detailLabel, period }: CardProps) {
   const image = project.thumbnail_image_url ? withBaseUrl(project.thumbnail_image_url) : undefined;
-  const video = project.thumbnail_video_url ? withBaseUrl(project.thumbnail_video_url) : undefined;
   const tags = getProjectTags(project);
   const release = releaseLabel(project, language);
 
   return (
     <Link to={`/project/${project.slug}`} className="bp-project-card">
       <BlueprintNodeHeader tone={projectTone(project)}>{projectTypeLabel(project)}</BlueprintNodeHeader>
-      <BlueprintMedia image={image} video={video} alt={title} className="bp-project-card__media" />
+      <BlueprintMedia image={image} alt={title} className="bp-project-card__media" />
       <div className="bp-project-card__body">
         <h3>{title}</h3>
         {release ? (
@@ -504,6 +503,22 @@ export default function Home() {
               </BlueprintNodeHeader>
               <div className="bp-featured__viewport">
                 <div className="bp-featured__track" style={{ transform: `translate3d(-${slideIndex * 100}%,0,0)` }}>
+                  {loading && featured.length === 0 ? (
+                    <div className="bp-featured__slide bp-featured__slide--loading" aria-hidden="true">
+                      <div className="bp-media">
+                        <div className="bp-media-spinner">
+                          <span className="bp-media-spinner__ring" />
+                          <span className="bp-media-spinner__label">compiling...</span>
+                        </div>
+                      </div>
+                      <div className="bp-featured__meta bp-featured__meta--loading">
+                        <div>
+                          <span className="bp-featured-loading-line bp-featured-loading-line--title" />
+                          <span className="bp-featured-loading-line" />
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                   {featured.map((project, index) => {
                     const title = t(project.title);
                     const release = releaseLabel(project, language);
@@ -511,9 +526,13 @@ export default function Home() {
                       <Link key={project.slug} to={`/project/${project.slug}`} className="bp-featured__slide">
                         <BlueprintMedia
                           image={project.thumbnail_image_url ? withBaseUrl(project.thumbnail_image_url) : undefined}
-                          video={project.thumbnail_video_url ? withBaseUrl(project.thumbnail_video_url) : undefined}
+                          video={
+                            index === slideIndex && project.thumbnail_video_url
+                              ? withBaseUrl(project.thumbnail_video_url)
+                              : undefined
+                          }
                           alt={title}
-                          autoPlay={Boolean(project.thumbnail_video_url)}
+                          autoPlay={index === slideIndex && Boolean(project.thumbnail_video_url)}
                           eager={index === 0}
                         />
                         {release ? (

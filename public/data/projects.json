@@ -43,7 +43,8 @@
     "order_index": 0,
     "created_at": "2026-01-19T12:48:58.363Z",
     "updated_at": "2026-03-07T12:03:11.750Z",
-    "thumbnail_video_url": "/assets/video/thumb.mp4",
+    "thumbnail_image_url": "/assets/image/fd-preview.webp",
+    "thumbnail_video_url": "/assets/video/thumb-preview.mp4",
     "technical_details": [
       "Unreal Engine",
       "C++ / Blueprint",
@@ -104,7 +105,8 @@
     "order_index": 1,
     "created_at": "2026-02-16T13:34:17.364Z",
     "updated_at": "2026-02-28T13:31:20.189Z",
-    "thumbnail_video_url": "/assets/video/alt/alt-ability.mp4",
+    "thumbnail_image_url": "/assets/image/alt-preview.webp",
+    "thumbnail_video_url": "/assets/video/alt/alt-ability-preview.mp4",
     "technical_details": [
       "Unreal Engine",
       "Blueprint / gameplay scripting",
@@ -221,8 +223,8 @@
     "order_index": 3,
     "created_at": "2026-06-25T00:00:00.000Z",
     "updated_at": "2026-06-25T00:00:00.000Z",
-    "thumbnail_image_url": "https://img.youtube.com/vi/QZkcf-p7Xto/maxresdefault.jpg",
-    "thumbnail_video_url": "/assets/video/frs-unity-plugin-thumbvideo.mp4",
+    "thumbnail_image_url": "/assets/image/frs-unity-preview.webp",
+    "thumbnail_video_url": "/assets/video/frs-unity-plugin-preview.mp4",
     "technical_details": [
       "Unity",
       "C#",

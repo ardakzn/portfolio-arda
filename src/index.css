@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -671,6 +669,24 @@ body {
   color: var(--bp-accent);
 }
 
+.bp-featured__meta--loading > div {
+  width: min(68%, 260px);
+}
+
+.bp-featured-loading-line {
+  display: block;
+  width: 72%;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bp-line);
+}
+
+.bp-featured-loading-line--title {
+  width: 100%;
+  height: 13px;
+  margin-bottom: 9px;
+}
+
 .bp-release-badge {
   display: inline-flex;
   width: max-content;
@@ -748,6 +764,7 @@ body {
 
 .bp-carousel-dots {
   display: flex;
+  min-height: 16px;
   justify-content: center;
   gap: 7px;
   background: transparent;

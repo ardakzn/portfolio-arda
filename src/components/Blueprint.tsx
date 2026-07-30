@@ -166,6 +166,7 @@ export function BlueprintMedia({
   const showVideo = Boolean(video && !videoFailed);
   const showImage = Boolean((!video || videoFailed) && image && !imageFailed);
   const failed = !showVideo && !showImage;
+  const mediaVisible = ready || (showVideo && Boolean(image));
 
   useEffect(() => {
     const element = videoRef.current;
@@ -211,7 +212,7 @@ export function BlueprintMedia({
 
   return (
     <div className={`bp-media ${className}`}>
-      {!ready && !failed ? <BlueprintSpinner /> : null}
+      {!mediaVisible && !failed ? <BlueprintSpinner /> : null}
       {showVideo ? (
         <video
           ref={videoRef}
@@ -244,7 +245,7 @@ export function BlueprintMedia({
             setReady(false);
             setVideoFailed(true);
           }}
-          className={ready ? 'is-ready' : ''}
+          className={mediaVisible ? 'is-ready' : ''}
         />
       ) : showImage ? (
         <img
