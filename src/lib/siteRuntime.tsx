@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { SiteData, SiteLanguage } from '../types/site';
 import type { LocalizedString } from '../types/i18n';
@@ -48,10 +48,20 @@ function getQueryLang(): string | null {
   }
 }
 
+function getInitialLanguage(): string {
+  const queryLanguage = getQueryLang();
+  if (queryLanguage) return queryLanguage;
+  try {
+    return normalizeLang(window.localStorage.getItem(LANGUAGE_STORAGE_KEY) || '') || 'en';
+  } catch {
+    return 'en';
+  }
+}
+
 export function SiteRuntimeProvider({ children }: { children: ReactNode }) {
-  const [site, setSite] = useState<SiteData>(getDefaultSite());
+  const [site, setSite] = useState<SiteData>(getDefaultSite);
   const [loading, setLoading] = useState(true);
-  const [language, setLanguageState] = useState<string>('en');
+  const [language, setLanguageState] = useState<string>(getInitialLanguage);
 
   useEffect(() => {
     void (async () => {
@@ -90,13 +100,17 @@ export function SiteRuntimeProvider({ children }: { children: ReactNode }) {
     setLanguageState(allowed.has(defaultLanguage) ? defaultLanguage : normalizeLang(languages[0]?.code || 'en'));
   }, [defaultLanguage, languages]);
 
-  const setLanguage = (code: string) => {
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+
+  const setLanguage = useCallback((code: string) => {
     const next = normalizeLang(code);
     const allowed = new Set(languages.map((l) => normalizeLang(l.code)));
     if (!allowed.has(next)) return;
     window.localStorage.setItem(LANGUAGE_STORAGE_KEY, next);
     setLanguageState(next);
-  };
+  }, [languages]);
 
   const runtime = useMemo<SiteRuntimeValue>(() => {
     const t = (value: LocalizedString | string | undefined) => {
@@ -113,11 +127,13 @@ export function SiteRuntimeProvider({ children }: { children: ReactNode }) {
       t,
       loading,
     };
-  }, [defaultLanguage, language, languages, loading, site]);
+  }, [defaultLanguage, language, languages, loading, setLanguage, site]);
 
   return <SiteRuntimeContext.Provider value={runtime}>{children}</SiteRuntimeContext.Provider>;
 }
 
+// The hook intentionally shares the provider module so both use the same private context.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSiteRuntime(): SiteRuntimeValue {
   const ctx = useContext(SiteRuntimeContext);
   if (!ctx) throw new Error('useSiteRuntime must be used within SiteRuntimeProvider');

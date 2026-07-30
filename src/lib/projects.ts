@@ -2,6 +2,7 @@ import type { ProjectWithDetails } from '../types/portfolio';
 import { isAdminEnabled } from './admin';
 import { loadDraftProjects } from './projectsDraft';
 import { withBaseUrl } from './paths';
+import { migrateLegacyProjectStructuredFields } from './projectStructuredFields';
 
 function titleForSort(p: ProjectWithDetails): string {
   const raw = p.title as unknown;
@@ -19,7 +20,7 @@ function titleForSort(p: ProjectWithDetails): string {
 }
 
 function sortProjects(list: ProjectWithDetails[]): ProjectWithDetails[] {
-  return [...list].sort((a, b) => {
+  return [...list].map(migrateLegacyProjectStructuredFields).sort((a, b) => {
     const ao = Number.isFinite(a.order_index) ? a.order_index : 0;
     const bo = Number.isFinite(b.order_index) ? b.order_index : 0;
     if (ao !== bo) return ao - bo;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Eye } from 'lucide-react';
 import { useSiteRuntime } from '../lib/siteRuntime';
@@ -27,7 +27,37 @@ export default function Footer() {
   const { site, t } = useSiteRuntime();
   const location = useLocation();
   const [views, setViews] = useState<number | null>(null);
+  const [compileComplete, setCompileComplete] = useState(false);
+  const compileRef = useRef<HTMLSpanElement | null>(null);
   const goatBase = useMemo(() => normalizeGoatcounterBase(site.links?.goatcounter_code || ''), [site.links?.goatcounter_code]);
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setCompileComplete(true);
+      return;
+    }
+
+    const element = compileRef.current;
+    if (!element || typeof IntersectionObserver === 'undefined') {
+      setCompileComplete(true);
+      return;
+    }
+
+    let timer = 0;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        timer = window.setTimeout(() => setCompileComplete(true), 700);
+        observer.disconnect();
+      },
+      { threshold: 0.6 },
+    );
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(timer);
+    };
+  }, []);
 
   useEffect(() => {
     if (!goatBase) {
@@ -56,12 +86,18 @@ export default function Footer() {
   }, [goatBase, location.pathname]);
 
   return (
-    <footer className="relative pt-10 pb-10 border-t border-white/5 text-center text-slate-500">
-      <p>{t(site.footer?.text) || '(c) 2026 - Minimal color, high readability.'}</p>
+    <footer className="bp-footer">
+      <p>{t(site.footer?.text) || '© 2026 Arda Kozan'}</p>
+      <p className="bp-footer__status">
+        node_count: 10 ·{' '}
+        <span ref={compileRef} className={`bp-footer__compile ${compileComplete ? 'is-complete' : ''}`}>
+          {compileComplete ? 'compiled ✓' : 'compiling...'}
+        </span>
+      </p>
       {views !== null && (
-        <div className="pointer-events-none absolute right-2 bottom-2 select-none opacity-35 transition-opacity hover:opacity-70 text-[10px] uppercase tracking-[0.16em] text-[#f9b234]">
-          <span className="inline-flex items-center gap-1 rounded-full border border-[#f9b234]/25 bg-[#0b101d]/65 px-2 py-1">
-            <Eye className="h-3 w-3" />
+        <div className="bp-footer__views">
+          <span>
+            <Eye />
             {views}
           </span>
         </div>

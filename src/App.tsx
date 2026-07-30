@@ -2,7 +2,6 @@ import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import ProjectDetail from './pages/ProjectDetail';
-import Projects from './pages/Projects';
 import { isAdminEnabled } from './lib/admin';
 import { SiteRuntimeProvider, useSiteRuntime } from './lib/siteRuntime';
 import { routerBasename } from './lib/paths';
@@ -91,7 +90,7 @@ function App() {
         <GoatCounterTracker />
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/projects" element={<Projects />} />
+          <Route path="/projects" element={<Navigate to="/#projeler" replace />} />
           <Route path="/project/:slug" element={<ProjectDetail />} />
           <Route path="*" element={<Navigate to="/" replace />} />
           {AdminPage && (

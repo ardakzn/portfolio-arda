@@ -6,6 +6,7 @@ import type { LocalizedText } from '../types/i18n';
 import Navbar from '../components/Navbar';
 import RichText from '../components/RichText';
 import InteractiveCodeViewer from '../components/InteractiveCodeViewer';
+import { BlueprintNodeHeader, BlueprintSpinner } from '../components/Blueprint';
 import { clearDraftProjects, loadDraftProjects, saveDraftProjects } from '../lib/projectsDraft';
 import { getProjectTags, loadProjectsFromFile, mergeProjects } from '../lib/projects';
 import { loadSnippetsFromFile } from '../lib/snippets';
@@ -13,6 +14,8 @@ import { clearDraftSnippets, loadDraftSnippets, saveDraftSnippets } from '../lib
 import { clearDraftSite, loadDraftSite, saveDraftSite } from '../lib/siteDraft';
 import { loadSiteFromFile } from '../lib/site';
 import { withBaseUrl } from '../lib/paths';
+import { migrateLegacyProjectStructuredFields } from '../lib/projectStructuredFields';
+import '../admin.css';
 
 type EditorProject = ProjectWithDetails;
 type EditorSnippet = CodeSnippet & { annotations?: CodeAnnotation[] };
@@ -195,7 +198,6 @@ function extractSnippetIds(text: string): string[] {
   const ids: string[] = [];
   const re = /@snippet\(\s*([^)]+?)\s*\)/g;
   let match: RegExpExecArray | null = null;
-  // eslint-disable-next-line no-cond-assign
   while ((match = re.exec(text))) {
     const inner = (match[1] || '').trim();
     if (!inner) continue;
@@ -256,6 +258,8 @@ function newProjectTemplate(): EditorProject {
     period_start: '',
     period_end: '',
     tags: [],
+    technical_details: [],
+    result: '',
     featured: false,
     order_index: 0,
     created_at: nowIso(),
@@ -264,15 +268,22 @@ function newProjectTemplate(): EditorProject {
 }
 
 function ensureProjectLinks(project: EditorProject): EditorProject {
-  return { ...project, links: Array.isArray(project.links) ? project.links : [] };
+  return {
+    ...project,
+    links: Array.isArray(project.links) ? project.links : [],
+    technical_details: Array.isArray(project.technical_details) ? project.technical_details : [],
+  };
 }
 
 function normalizeProjects(projects: EditorProject[]): EditorProject[] {
   return [...projects]
-    .map((p) => ({
-      ...p,
-      content_blocks: reindexContentBlocks(sortContentBlocks(p.content_blocks)),
-    }))
+    .map((p) => {
+      const migrated = migrateLegacyProjectStructuredFields(p);
+      return {
+        ...migrated,
+        content_blocks: reindexContentBlocks(sortContentBlocks(migrated.content_blocks)),
+      };
+    })
     .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
 }
 
@@ -361,6 +372,15 @@ export default function Admin() {
   const [pendingBlockDeleteId, setPendingBlockDeleteId] = useState<string | null>(null);
   const [autoSlug, setAutoSlug] = useState(true);
   const [tagsInput, setTagsInput] = useState('');
+  const [technicalDetailsInput, setTechnicalDetailsInput] = useState('');
+  const technicalDetailsPreview = useMemo(
+    () =>
+      technicalDetailsInput
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean),
+    [technicalDetailsInput],
+  );
   const [snippetSelection, setSnippetSelection] = useState<Record<number, SelectionInfo | null>>({});
   const [showPreview, setShowPreview] = useState(true);
   const [reorderMode, setReorderMode] = useState(false);
@@ -591,6 +611,7 @@ export default function Admin() {
         if (first) {
           setForm(ensureProjectLinks(first));
           setTagsInput(getProjectTags(first).join(', '));
+          setTechnicalDetailsInput((first.technical_details || []).join(',\n'));
         }
       }
       const rich = normalized.find((p) => p.id === 'proj_richtext_demo') || null;
@@ -612,6 +633,7 @@ export default function Admin() {
     setForm(ensureProjectLinks(p));
     setPendingBlockDeleteId(null);
     setTagsInput(getProjectTags(p).join(', '));
+    setTechnicalDetailsInput((p.technical_details || []).join(',\n'));
     setAutoSlug(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
@@ -667,6 +689,7 @@ export default function Admin() {
     const fresh = newProjectTemplate();
     setForm(ensureProjectLinks(fresh));
     setTagsInput('');
+    setTechnicalDetailsInput('');
     setAutoSlug(true);
   };
 
@@ -788,6 +811,10 @@ export default function Admin() {
       .split(',')
       .map((t) => t.trim())
       .filter(Boolean);
+    const technicalDetails = technicalDetailsInput
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
 
     const derivedOrderIndex = (() => {
       const idx = projects.findIndex((p) => p.id === form.id);
@@ -814,6 +841,8 @@ export default function Admin() {
       period_start: cleanLocalizedText(form.period_start || ''),
       period_end: cleanLocalizedText(form.period_end || ''),
       tags,
+      technical_details: technicalDetails,
+      result: cleanLocalizedText(form.result || ''),
       tech_stack: undefined,
       order_index: derivedOrderIndex,
       updated_at: nowIso(),
@@ -1103,20 +1132,14 @@ export default function Admin() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-slate-200 bg-[#060b16]">
-        Loading…
+      <div className="blueprint-site bp-admin bp-admin__loading">
+        <BlueprintSpinner />
       </div>
     );
   }
 
   return (
-    <div
-      className="min-h-screen text-slate-100 relative"
-      style={{
-        background:
-          'radial-gradient(circle at 20% 20%, rgba(59, 227, 255, 0.08), transparent 25%), radial-gradient(circle at 80% 10%, rgba(249, 178, 52, 0.08), transparent 25%), linear-gradient(135deg, #060b16 0%, #0e1526 100%)',
-      }}
-    >
+    <div className="blueprint-site bp-admin min-h-screen text-slate-100 relative">
       {confirmDialog.open && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
           <div
@@ -1151,10 +1174,12 @@ export default function Admin() {
 
       <Navbar />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+      <main className="bp-admin__content max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
+        <div className="bp-admin__hero flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-[#f9b234]">Hidden Admin</p>
+            <p className="bp-admin__eyebrow text-xs uppercase tracking-[0.2em] text-[#f9b234]">
+              ƒ AdminConsole() <span>// local control panel</span>
+            </p>
             <h1 className="text-3xl font-semibold text-white mt-2">
               {activeTab === 'projects' ? 'Projects Editor' : activeTab === 'snippets' ? 'Snippets Editor' : 'Site Settings'}
             </h1>
@@ -1166,8 +1191,8 @@ export default function Admin() {
                   : 'Edit global site text + links (navbar, home, projects page). To publish, replace `public/data/site.json` and redeploy.'}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <div className="inline-flex rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+          <div className="bp-admin__toolbar flex flex-wrap gap-2">
+            <div className="bp-admin__tabs inline-flex rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
               <button
                 type="button"
                 onClick={() => setActiveTab('projects')}
@@ -1308,7 +1333,7 @@ export default function Admin() {
           </div>
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-[#101a2f]/55 overflow-hidden">
+        <div className="bp-admin__language-panel rounded-3xl border border-white/10 bg-[#101a2f]/55 overflow-hidden">
           <div className="px-6 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <span className="text-slate-400 text-xs uppercase tracking-[0.2em] mr-1">Languages</span>
@@ -1355,7 +1380,7 @@ export default function Admin() {
                 </select>
               </label>
 
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-slate-200">
+              <div className="bp-admin__add-language flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-slate-200">
                 <span className="text-slate-400">Add language</span>
                 <input
                   value={siteAddLangCode}
@@ -1422,7 +1447,7 @@ export default function Admin() {
           </div>
         )}
 
-        <div className="rounded-2xl border border-white/10 bg-[#101a2f]/70 px-4 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-sm">
+        <div className="bp-admin__draft-panel rounded-2xl border border-white/10 bg-[#101a2f]/70 px-4 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-sm">
           {activeTab === 'projects' ? (
             <>
               <div className="text-slate-300">
@@ -2277,6 +2302,84 @@ export default function Admin() {
                   </div>
                 )}
               </label>
+
+              <div className="bp-admin__structured-fields grid gap-4 md:grid-cols-2 md:col-span-2">
+                <section className="bp-admin__structured-panel">
+                  <div className="bp-admin__structured-panel-header">
+                    <div>
+                      <h2>Technical Details</h2>
+                      <p>// separate from markdown · comma separated</p>
+                    </div>
+                  </div>
+                  <label className="space-y-1">
+                    <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Items</div>
+                    <textarea
+                      value={technicalDetailsInput}
+                      onChange={(event) => setTechnicalDetailsInput(event.target.value)}
+                      rows={7}
+                      className="w-full px-3 py-2 rounded-xl bg-[#0e1526] border border-white/10 focus:outline-none focus:ring-2 focus:ring-[#3be3ff]/40"
+                      placeholder={'Unreal Engine,\nC++ / Blueprint,\nMultiplayer session flow,\nAdvanced Sessions'}
+                    />
+                  </label>
+                  {showPreview && technicalDetailsPreview.length > 0 ? (
+                    <div className="bp-admin__structured-preview">
+                      <span>preview::tech_stack</span>
+                      <div className="bp-tech-node">
+                        <BlueprintNodeHeader tone="game">
+                          ƒ GetTechStack() <span className="bp-comment">// Technical Details</span>
+                        </BlueprintNodeHeader>
+                        <ul>
+                          {technicalDetailsPreview.map((item, index) => {
+                            const colors = ['#4ec9b0', '#c9a44e', '#c94e6f', '#9c6fc9', '#6fa8c9'];
+                            return (
+                              <li key={`${item}-${index}`}>
+                                <span className="bp-pin" style={{ background: colors[index % colors.length] }} />
+                                {item}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    </div>
+                  ) : null}
+                </section>
+
+                <section className="bp-admin__structured-panel">
+                  <div className="bp-admin__structured-panel-header">
+                    <div>
+                      <h2>Return</h2>
+                      <p>// separate result · supports markdown</p>
+                    </div>
+                  </div>
+                  <label className="space-y-1">
+                    <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Result text</div>
+                    <textarea
+                      value={getTextForLang(form.result, projectsEditLang, siteDefaultLang)}
+                      onChange={(event) =>
+                        setForm((project) => ({
+                          ...project,
+                          result: setTextForLang(project.result, projectsEditLang, siteDefaultLang, event.target.value),
+                        }))
+                      }
+                      rows={4}
+                      className="w-full px-3 py-2 rounded-xl bg-[#0e1526] border border-white/10 focus:outline-none focus:ring-2 focus:ring-[#3be3ff]/40"
+                      placeholder="Leave empty to hide the return node"
+                    />
+                  </label>
+                  {showPreview && resolveLocalizedText(form.result, projectsEditLang, siteDefaultLang).trim() ? (
+                    <div className="bp-admin__structured-preview">
+                      <span>preview::return</span>
+                      <div className="bp-result-node">
+                        <RichText
+                          text={resolveLocalizedText(form.result, projectsEditLang, siteDefaultLang)}
+                          className="blueprint-richtext"
+                          headingIdPrefix="admin-result--"
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+                </section>
+              </div>
 
               <div className="space-y-3 md:col-span-2">
                 <div className="flex items-center justify-between gap-3">
@@ -3242,7 +3345,7 @@ export default function Admin() {
           </section>
         </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

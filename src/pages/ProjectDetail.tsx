@@ -1,812 +1,413 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowUp, ArrowUpRight, Calendar, ChevronDown, ChevronRight, Tag } from 'lucide-react';
-import type { ProjectWithDetails } from '../types/portfolio';
-import InteractiveCodeViewer from '../components/InteractiveCodeViewer';
+import { Calendar, ChevronDown, ExternalLink } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { getProjectTags, loadProjectsList } from '../lib/projects';
-import { loadSnippetsFromFile, type CodeSnippetWithAnnotations } from '../lib/snippets';
+import InteractiveCodeViewer from '../components/InteractiveCodeViewer';
 import RichText from '../components/RichText';
+import BlueprintMediaGallery from '../components/BlueprintMediaGallery';
+import {
+  BlueprintChevron,
+  BlueprintMedia,
+  BlueprintNodeHeader,
+  BlueprintSectionTitle,
+} from '../components/Blueprint';
+import { releaseLabel } from '../lib/blueprintProject';
+import { getProjectTags, loadProjectsList } from '../lib/projects';
+import { parseProjectDetailContent } from '../lib/projectDetailContent';
+import { loadSnippetsFromFile, type CodeSnippetWithAnnotations } from '../lib/snippets';
 import { useSiteRuntime } from '../lib/siteRuntime';
-import { extractMarkdownHeadings } from '../lib/markdown';
-import type { LocalizedString } from '../types/i18n';
 import { withBaseUrl } from '../lib/paths';
+import type { ProjectWithDetails } from '../types/portfolio';
 
-const uiProjectNotFound: LocalizedString = { en: 'Project not found', tr: 'Proje bulunamadı' };
-const uiBackHome: LocalizedString = { en: 'Back to home', tr: 'Ana sayfaya dön' };
-const uiBackProjects: LocalizedString = { en: 'Back to projects', tr: 'Tüm projelere dön' };
-const uiTocTitle: LocalizedString = { en: 'Table of contents', tr: 'İçindekiler' };
-const uiOverviewLabel: LocalizedString = { en: 'Overview', tr: 'Genel' };
-const uiSectionLabel: LocalizedString = { en: 'Section', tr: 'Bölüm' };
-const uiScrollTop: LocalizedString = { en: 'Scroll to top', tr: 'Yukarı çık' };
-const uiClose: LocalizedString = { en: 'Close', tr: 'Kapat' };
+type ProjectLinkKind = 'steam' | 'unity' | 'fab' | 'youtube' | 'external';
+
+function SteamIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+      <path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.29-.249-1.878-.03l1.523.63c.956.4 1.409 1.5 1.009 2.455-.397.957-1.497 1.41-2.454 1.012H7.54zm11.415-9.303c0-1.662-1.353-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.663 0 3.015-1.35 3.015-3.015zm-5.273-.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.253 0-2.265-1.014-2.265-2.265z" />
+    </svg>
+  );
+}
+
+function UnityIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+      <path d="m12.929 4.294 3.8 2.193c.136.077.141.29 0 .367l-4.516 2.608a.419.419 0 0 1-.424 0L7.274 6.854c-.139-.074-.142-.293 0-.367l3.797-2.193V0L1.376 5.598v11.195l3.717-2.146v-4.385c-.002-.157.182-.269.319-.184l4.514 2.607a.425.425 0 0 1 .214.368v5.213c.002.156-.182.268-.318.184l-3.8-2.193-3.717 2.145L12 24l9.695-5.598-3.717-2.145-3.8 2.193c-.134.082-.323-.025-.318-.184v-5.213c0-.157.087-.296.214-.368l4.514-2.607c.134-.082.323.022.319.184v4.385l3.717 2.146V5.598L12.929 0Z" />
+    </svg>
+  );
+}
+
+function FabIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <ellipse cx="12" cy="12" rx="10.25" ry="7.25" fill="currentColor" />
+      <text
+        x="12"
+        y="15.15"
+        fill="#0b0d10"
+        fontFamily="Arial, sans-serif"
+        fontSize="8.7"
+        fontWeight="900"
+        letterSpacing="-.45"
+        textAnchor="middle"
+      >
+        FAB
+      </text>
+    </svg>
+  );
+}
+
+function YouTubeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814ZM9.545 15.568V8.432L15.818 12l-6.273 3.568Z" />
+    </svg>
+  );
+}
+
+function getProjectLinkKind(url: string): ProjectLinkKind {
+  if (/(?:store\.)?steampowered\.com/i.test(url)) return 'steam';
+  if (/assetstore\.unity\.com/i.test(url)) return 'unity';
+  if (/(?:www\.)?fab\.com/i.test(url)) return 'fab';
+  if (/(?:youtube\.com|youtu\.be)/i.test(url)) return 'youtube';
+  return 'external';
+}
+
+function ProjectLinkIcon({ kind }: { kind: ProjectLinkKind }) {
+  if (kind === 'steam') return <SteamIcon />;
+  if (kind === 'unity') return <UnityIcon />;
+  if (kind === 'fab') return <FabIcon />;
+  if (kind === 'youtube') return <YouTubeIcon />;
+  return <ExternalLink />;
+}
+
+const text = {
+  en: {
+    back: 'Back to ForEach(Projects)',
+    notFound: 'Project not found',
+    home: 'Back to home',
+    tech: 'Technical Details',
+    next: 'NEXT PROJECT',
+    inspect: 'inspect',
+    overview: 'Overview',
+    media: 'Systems in action',
+  },
+  tr: {
+    back: 'ForEach(Projects) listesine dön',
+    notFound: 'Proje bulunamadı',
+    home: 'Ana sayfaya dön',
+    tech: 'Teknik Detaylar',
+    next: 'SONRAKİ PROJE',
+    inspect: 'incele',
+    overview: 'Genel Bakış',
+    media: 'Sistemler iş başında',
+  },
+} as const;
 
 export default function ProjectDetail() {
-  const { t } = useSiteRuntime();
   const { slug } = useParams<{ slug: string }>();
-  const [project, setProject] = useState<ProjectWithDetails | null>(null);
+  const { t, language } = useSiteRuntime();
+  const ui = language === 'tr' ? text.tr : text.en;
+  const [projects, setProjects] = useState<ProjectWithDetails[]>([]);
   const [snippets, setSnippets] = useState<CodeSnippetWithAnnotations[]>([]);
   const [loading, setLoading] = useState(true);
-  const [highlightSection, setHighlightSection] = useState<string | null>(null);
-  const [heroVideoReady, setHeroVideoReady] = useState(false);
-  const [heroShowPlaceholder, setHeroShowPlaceholder] = useState(false);
-
-  const [showFloatingNav, setShowFloatingNav] = useState(false);
-  const [mobileTocOpen, setMobileTocOpen] = useState(false);
-  const [mobileTocTop, setMobileTocTop] = useState<number>(0);
-  const [tocExpandedBySection, setTocExpandedBySection] = useState<Record<string, boolean>>({});
-  const [tocExpandedByGroup, setTocExpandedByGroup] = useState<Record<string, boolean>>({});
-
-  const hasExtraContent = (project?.content_blocks?.length ?? 0) > 0;
-
-  const snippetById = useMemo(() => {
-    const map = new Map<string, CodeSnippetWithAnnotations>();
-    for (const s of snippets || []) map.set(s.id, s);
-    return map;
-  }, [snippets]);
-
-  const contentBlocks = useMemo(() => {
-    const list = (project?.content_blocks || []).slice();
-    const withOrder = list.map((b, idx) => ({ ...b, order_index: Number.isFinite(b.order_index) ? b.order_index : idx }));
-    withOrder.sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
-    return withOrder;
-  }, [project?.content_blocks]);
-
-  const localizedDescription = useMemo(() => (project ? t(project.description) : ''), [project, t]);
-  const localizedTitle = useMemo(() => (project ? t(project.title) : ''), [project, t]);
-  const localizedSummary = useMemo(() => (project ? t(project.summary) : ''), [project, t]);
-  const projectLinks = useMemo(
-    () => (project?.links || []).filter((link) => (link?.url || '').trim().length > 0),
-    [project?.links],
-  );
-  const projectTags = useMemo(() => (project ? getProjectTags(project) : []), [project]);
-  const periodStart = (t(project?.period_start) || '').trim();
-  const periodEnd = (t(project?.period_end) || '').trim();
-  const periodLabel = periodStart && periodEnd ? `${periodStart} - ${periodEnd}` : periodStart || periodEnd;
-
-  const getFaviconUrl = (url: string) => {
-    try {
-      const parsed = new URL(url);
-      return `https://www.google.com/s2/favicons?domain=${parsed.hostname}&sz=32`;
-    } catch {
-      return '';
-    }
-  };
-
-  const resolveProjectUrl = (url: string) => {
-    const trimmed = (url || '').trim();
-    if (!trimmed) return '';
-    if (/^[a-zA-Z]+:\/\//.test(trimmed)) return trimmed;
-    return withBaseUrl(trimmed);
-  };
-
-  const toc = useMemo(() => {
-    const groupHeadings = (items: { id: string; label: string; level: 2 | 3 }[]) => {
-      const groups: { id: string; label: string; children: { id: string; label: string }[] }[] = [];
-      let current: { id: string; label: string; children: { id: string; label: string }[] } | null = null;
-
-      for (const item of items) {
-        if (item.level === 2) {
-          current = { id: item.id, label: item.label, children: [] };
-          groups.push(current);
-          continue;
-        }
-
-        if (current) {
-          current.children.push({ id: item.id, label: item.label });
-        } else {
-          groups.push({ id: item.id, label: item.label, children: [] });
-        }
-      }
-
-      return groups;
-    };
-
-    const overviewHeadings = extractMarkdownHeadings(localizedDescription || '', 'overview--');
-    const sections: {
-      id: string;
-      label: string;
-      groups: { id: string; label: string; children: { id: string; label: string }[] }[];
-    }[] = [
-      { id: 'overview', label: t(uiOverviewLabel), groups: groupHeadings(overviewHeadings) },
-    ];
-
-    if (hasExtraContent) {
-      contentBlocks.forEach((b, idx) => {
-        const sectionId = `content-${b.id || idx}`;
-        const headings = extractMarkdownHeadings(t(b.content) || '', `${sectionId}--`);
-        sections.push({ id: sectionId, label: (t(b.title) || '').trim() || `${t(uiSectionLabel)} ${idx + 1}`, groups: groupHeadings(headings) });
-      });
-    }
-
-    return sections;
-  }, [contentBlocks, hasExtraContent, localizedDescription, t]);
 
   useEffect(() => {
-    setTocExpandedBySection((prev) => {
-      const next: Record<string, boolean> = { ...prev };
-      for (const sec of toc) {
-        if (sec.groups.length === 0) {
-          delete next[sec.id];
-          continue;
-        }
-        if (next[sec.id] === undefined) next[sec.id] = true;
-      }
-      return next;
-    });
-  }, [toc]);
-
-  useEffect(() => {
-    setTocExpandedByGroup((prev) => {
-      const next: Record<string, boolean> = { ...prev };
-      for (const sec of toc) {
-        for (const g of sec.groups) {
-          const key = `${sec.id}::${g.id}`;
-          if (g.children.length === 0) {
-            delete next[key];
-            continue;
-          }
-          if (next[key] === undefined) next[key] = true;
-        }
-      }
-      return next;
-    });
-  }, [toc]);
-
-  const scrollToSection = (id: string) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-
-    setMobileTocOpen(false);
-
-    const siteHeader = document.getElementById('site-header');
-    const tocBar = document.getElementById('project-toc-bar');
-    const headerH = siteHeader ? siteHeader.getBoundingClientRect().height : 64;
-    const tocH = tocBar ? tocBar.getBoundingClientRect().height : 0;
-    const offset = headerH + tocH + 20;
-
-    const rawTop = el.getBoundingClientRect().top + window.scrollY - offset;
-    const maxTop = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-    const top = Math.min(Math.max(0, rawTop), maxTop);
-    window.scrollTo({ top, behavior: 'smooth' });
-
-    setHighlightSection(id);
-    window.setTimeout(() => setHighlightSection((cur) => (cur === id ? null : cur)), 900);
-  };
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    setHighlightSection('overview');
-    window.setTimeout(() => setHighlightSection((cur) => (cur === 'overview' ? null : cur)), 900);
-  };
-
-  useEffect(() => {
-    if (!slug) return;
-    void (async () => {
-      try {
-        const [list, snippetList] = await Promise.all([loadProjectsList(), loadSnippetsFromFile()]);
-        const projectData = list.find((p) => p.slug === slug) || null;
-        setProject(projectData as ProjectWithDetails | null);
+    let active = true;
+    setLoading(true);
+    void Promise.all([loadProjectsList(), loadSnippetsFromFile()])
+      .then(([projectList, snippetList]) => {
+        if (!active) return;
+        setProjects(projectList);
         setSnippets(snippetList);
-        setHeroVideoReady(false);
-        setHeroShowPlaceholder(false);
-      } catch (error) {
-        console.error('Error loading project:', error);
-      } finally {
-        setLoading(false);
-      }
-    })();
+      })
+      .catch((error) => console.error('Error loading project:', error))
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, [slug]);
 
   useEffect(() => {
-    if (!project?.thumbnail_video_url) {
-      setHeroShowPlaceholder(false);
-      return;
-    }
-    setHeroShowPlaceholder(false);
-    const id = window.setTimeout(() => setHeroShowPlaceholder(true), 150);
-    return () => window.clearTimeout(id);
-  }, [project?.thumbnail_video_url, project?.slug]);
+    window.scrollTo({ top: 0 });
+  }, [slug]);
 
-  useEffect(() => {
-    const onScroll = () => setShowFloatingNav(window.scrollY > 320);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  const project = projects.find((item) => item.slug === slug) || null;
+  const projectIndex = project ? projects.findIndex((item) => item.slug === project.slug) : -1;
+  const nextProject = projectIndex >= 0 && projects.length > 1 ? projects[(projectIndex + 1) % projects.length] : null;
 
-  useEffect(() => {
-    if (!hasExtraContent) setMobileTocOpen(false);
-  }, [hasExtraContent]);
-
-  useEffect(() => {
-    if (!mobileTocOpen) return;
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMobileTocOpen(false);
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [mobileTocOpen]);
-
-  useEffect(() => {
-    if (!mobileTocOpen) return;
-
-    const recalc = () => {
-      const header = document.getElementById('site-header');
-      const bar = document.getElementById('project-toc-bar');
-      const headerH = header ? header.getBoundingClientRect().height : 0;
-      const barH = bar ? bar.getBoundingClientRect().height : 0;
-      setMobileTocTop(headerH + barH + 8);
-    };
-
-    recalc();
-    window.addEventListener('resize', recalc);
-    window.addEventListener('scroll', recalc, { passive: true });
-    return () => {
-      window.removeEventListener('resize', recalc);
-      window.removeEventListener('scroll', recalc);
-    };
-  }, [mobileTocOpen]);
-
-  useEffect(() => {
-    const onOverlay = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { source?: string; open?: boolean } | undefined;
-      if (!detail) return;
-      if (detail.source === 'nav' && detail.open) setMobileTocOpen(false);
-    };
-
-    window.addEventListener('codefolio:overlay', onOverlay as EventListener);
-    return () => window.removeEventListener('codefolio:overlay', onOverlay as EventListener);
-  }, []);
-
-  const renderSnippet = (id: string, caption?: string) => {
-    const snip = snippetById.get(id) || null;
-    if (!snip) return null;
-    const summaryText = (caption || '').trim() || (t(snip.description) || '').trim();
-    return (
-      <details className="group my-4 rounded-3xl border border-white/5 bg-[#101a2f]/70 overflow-hidden shadow-lg shadow-black/20">
-        <summary className="cursor-pointer select-none px-5 py-4 flex items-start justify-between gap-4 hover:bg-white/5 transition [&::-webkit-details-marker]:hidden [&::marker]:hidden">
-          <div className="min-w-0">
-            <div className="text-base font-semibold text-white truncate">{t(snip.title) || snip.id}</div>
-            {summaryText && <div className="text-sm text-slate-300 mt-1 line-clamp-2">{summaryText}</div>}
-          </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <span className="text-xs text-slate-100 bg-white/5 border border-white/10 px-3 py-1 rounded-full">
-              {(snip.language || '').toUpperCase()}
-            </span>
-            <ChevronDown className="w-5 h-5 text-slate-300 transition-transform group-open:rotate-180" />
-          </div>
-        </summary>
-        <div className="border-t border-white/5">
-          <div className="p-4">
-            <InteractiveCodeViewer snippet={snip} annotations={snip.annotations || []} hideHeader />
-          </div>
-        </div>
-      </details>
-    );
-  };
+  const snippetById = useMemo(() => {
+    const map = new Map<string, CodeSnippetWithAnnotations>();
+    snippets.forEach((snippet) => map.set(snippet.id, snippet));
+    return map;
+  }, [snippets]);
 
   if (loading) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center text-slate-100"
-        style={{ background: 'linear-gradient(135deg, #060b16, #0e1526)' }}
-      >
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/10 border-t-[#3be3ff]"></div>
+      <div className="blueprint-site bp-page-state">
+        <span className="bp-media-spinner" role="status" aria-label="Compiling">
+          <span className="bp-media-spinner__ring" aria-hidden="true" />
+          <span className="bp-media-spinner__label" aria-hidden="true">
+            compiling...
+          </span>
+        </span>
       </div>
     );
   }
 
   if (!project) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center text-slate-100"
-        style={{ background: 'linear-gradient(135deg, #060b16, #0e1526)' }}
-      >
-        <div className="text-center space-y-4">
-          <h1 className="text-3xl font-semibold text-white">{t(uiProjectNotFound)}</h1>
-          <Link to="/" className="inline-flex items-center gap-2 text-[#3be3ff] hover:text-[#f9b234] transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            {t(uiBackHome)}
+      <div className="blueprint-site bp-page-state">
+        <div className="bp-empty">
+          <h1>{ui.notFound}</h1>
+          <Link to="/" className="bp-button bp-button--secondary">
+            {ui.home}
           </Link>
         </div>
       </div>
     );
   }
 
+  const title = t(project.title);
+  const summary = t(project.summary);
+  const description = t(project.description);
+  const tags = getProjectTags(project);
+  const start = t(project.period_start);
+  const end = t(project.period_end);
+  const period = start && end ? `${start} — ${end}` : start || end;
+  const release = releaseLabel(project, language);
+  const links = (project.links || []).filter((link) => (link.url || '').trim());
+  const blocks = (project.content_blocks || [])
+    .slice()
+    .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+  const parsedContent = parseProjectDetailContent(description);
+  const technicalItems = Array.isArray(project.technical_details)
+    ? project.technical_details.map((item) => item.trim()).filter(Boolean)
+    : [];
+  const result = t(project.result).trim();
+
+  const renderSnippet = (id: string, caption?: string) => {
+    const snippet = snippetById.get(id);
+    if (!snippet) return null;
+    const descriptionText = (caption || '').trim() || t(snippet.description);
+    return (
+      <details className="bp-snippet">
+        <summary>
+          <span>
+            <strong>ƒ {t(snippet.title) || snippet.id}</strong>
+            {descriptionText ? <small>// {descriptionText}</small> : null}
+          </span>
+          <span>
+            {(snippet.language || '').toUpperCase()}
+            <ChevronDown />
+          </span>
+        </summary>
+        <div className="bp-snippet__content">
+          <InteractiveCodeViewer snippet={snippet} annotations={snippet.annotations || []} hideHeader />
+        </div>
+      </details>
+    );
+  };
+
   return (
-    <div
-      className="min-h-screen text-slate-100 relative overflow-x-hidden"
-      style={{
-        background:
-          'radial-gradient(circle at 15% 20%, rgba(59, 227, 255, 0.08), transparent 25%), radial-gradient(circle at 80% 10%, rgba(249, 178, 52, 0.08), transparent 25%), linear-gradient(135deg, #060b16 0%, #0e1526 100%)',
-      }}
-    >
+    <div className="blueprint-site">
       <Navbar />
+      <main className="bp-shell bp-project-detail">
+        <Link to="/#projeler" className="bp-back-link">
+          <BlueprintChevron />
+          {ui.back}
+        </Link>
 
-      {hasExtraContent && (
-        <div id="project-toc-bar" className="sticky top-[57px] sm:top-[65px] z-40 min-[1700px]:hidden border-b border-white/5 bg-[#0c1324]/55 backdrop-blur">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-            <button
-              type="button"
-              onClick={() =>
-                setMobileTocOpen((v) => {
-                  const next = !v;
-                  window.dispatchEvent(new CustomEvent('codefolio:overlay', { detail: { source: 'toc', open: next } }));
-                  return next;
-                })
+        <article>
+          <header className="bp-project-hero bp-enter bp-enter--1">
+            <BlueprintNodeHeader
+              tone="function"
+              aside={
+                release ? (
+                  <span className="bp-release-badge">
+                    <span />
+                    {release}
+                  </span>
+                ) : null
               }
-              className="w-full inline-flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#101a2f]/35 px-4 py-3 text-sm text-white hover:bg-[#101a2f]/50 transition active:scale-[0.99]"
-              aria-expanded={mobileTocOpen}
-              aria-controls="mobile-toc-panel"
             >
-              <span className="font-semibold">{t(uiTocTitle)}</span>
-              <ChevronDown
-                className={`w-5 h-5 text-slate-200 transition-transform ${mobileTocOpen ? 'rotate-180' : ''}`}
-              />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {hasExtraContent && mobileTocOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-40 bg-black/20 min-[1700px]:hidden"
-            role="button"
-            tabIndex={-1}
-            aria-label="Close table of contents"
-            onClick={() => setMobileTocOpen(false)}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') setMobileTocOpen(false);
-            }}
-          />
-          <div
-            id="mobile-toc-panel"
-            className="fixed z-50 left-4 right-4 min-[1700px]:hidden"
-            style={{ top: mobileTocTop }}
-          >
-            <div className="rounded-3xl border border-white/10 bg-[#101a2f]/95 backdrop-blur shadow-2xl shadow-black/40 overflow-hidden">
-              <div className="px-4 py-3 flex items-center justify-between gap-3 border-b border-white/10">
-                <Link
-                  to="/projects"
-                  className="inline-flex items-center gap-2 text-sm text-white hover:text-[#3be3ff] transition"
-                  onClick={() => setMobileTocOpen(false)}
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  {t(uiBackProjects)}
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => setMobileTocOpen(false)}
-                  className="text-xs px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition active:scale-[0.98]"
-                >
-                  {t(uiClose)}
-                </button>
+              ƒ GetProject(<span className="bp-string">"{project.slug}"</span>)
+            </BlueprintNodeHeader>
+            <div className="bp-project-hero__body">
+              <div className="bp-project-hero__copy">
+                <h1>{title}</h1>
+                <p>{summary}</p>
+                <div className="bp-tags">
+                  {tags.map((tag) => (
+                    <span key={tag}>{tag}</span>
+                  ))}
+                </div>
               </div>
-
-              <div className="max-h-[55vh] overflow-y-auto overflow-x-hidden p-2">
-                {toc.map((sec) => (
-                  <div key={sec.id} className="mb-2">
-                    <div className="grid grid-cols-[1.25rem,1fr] items-center gap-2 px-1">
-                      {sec.groups.length > 0 ? (
-                        <button
-                          type="button"
-                          aria-label={tocExpandedBySection[sec.id] ? 'Collapse section' : 'Expand section'}
-                          onClick={() => setTocExpandedBySection((cur) => ({ ...cur, [sec.id]: !cur[sec.id] }))}
-                          className="inline-flex items-center justify-center w-5 h-5 rounded-md hover:bg-white/10 transition active:scale-[0.98]"
-                        >
-                          <ChevronRight
-                            className={`w-4 h-4 text-slate-300 transition-transform ${
-                              tocExpandedBySection[sec.id] ? 'rotate-90' : ''
-                            }`}
-                          />
-                        </button>
-                      ) : (
-                        <span className="w-5 h-5" />
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => scrollToSection(sec.id)}
-                        className="min-w-0 text-left px-3 py-2 rounded-2xl border border-transparent bg-transparent text-slate-200 hover:bg-white/5 hover:border-white/10 transition active:scale-[0.98] active:bg-white/10"
-                        title={sec.label}
-                      >
-                        <span className="block truncate text-sm font-semibold">{sec.label}</span>
-                      </button>
-                    </div>
-
-                    {sec.groups.length > 0 && tocExpandedBySection[sec.id] && (
-                      <div className="mt-1 space-y-0.5">
-                        {sec.groups.map((g) => (
-                          <div key={g.id} className="space-y-0.5">
-                            <div className="grid grid-cols-[1.25rem,1fr] items-center gap-2 px-1" style={{ paddingLeft: 16 }}>
-                              {g.children.length > 0 ? (
-                                <button
-                                  type="button"
-                                  aria-label={
-                                    tocExpandedByGroup[`${sec.id}::${g.id}`] ? 'Collapse group' : 'Expand group'
-                                  }
-                                  onClick={() =>
-                                    setTocExpandedByGroup((cur) => ({
-                                      ...cur,
-                                      [`${sec.id}::${g.id}`]: !cur[`${sec.id}::${g.id}`],
-                                    }))
-                                  }
-                                  className="inline-flex items-center justify-center w-5 h-5 rounded-md hover:bg-white/10 transition active:scale-[0.98]"
-                                >
-                                  <ChevronRight
-                                    className={`w-4 h-4 text-slate-400 transition-transform ${
-                                      tocExpandedByGroup[`${sec.id}::${g.id}`] ? 'rotate-90' : ''
-                                    }`}
-                                  />
-                                </button>
-                              ) : (
-                                <span className="w-5 h-5" />
-                              )}
-
-                              <button
-                                type="button"
-                                onClick={() => scrollToSection(g.id)}
-                                className="min-w-0 text-left px-3 py-1.5 rounded-2xl border border-transparent bg-transparent hover:bg-white/5 hover:border-white/10 transition active:scale-[0.98] active:bg-white/10"
-                                title={g.label}
-                              >
-                                <span className="block truncate text-sm font-medium text-slate-300">{g.label}</span>
-                              </button>
-                            </div>
-
-                            {g.children.length > 0 && tocExpandedByGroup[`${sec.id}::${g.id}`] && (
-                              <div className="space-y-0.5" style={{ paddingLeft: 32 }}>
-                                {g.children.map((c) => (
-                                  <div key={c.id} className="grid grid-cols-[1.25rem,1fr] items-center gap-2 px-1">
-                                    <span className="w-5 h-5" />
-                                    <button
-                                      type="button"
-                                      onClick={() => scrollToSection(c.id)}
-                                      className="min-w-0 text-left px-3 py-1.5 rounded-2xl border border-transparent bg-transparent hover:bg-white/5 hover:border-white/10 transition active:scale-[0.98] active:bg-white/10"
-                                      title={c.label}
-                                    >
-                                      <span className="block truncate text-sm text-slate-400">{c.label}</span>
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+              <div className="bp-project-hero__actions">
+                {links.map((link) => {
+                  const href = /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(link.url) ? link.url : withBaseUrl(link.url);
+                  const linkKind = getProjectLinkKind(link.url);
+                  return (
+                    <a
+                      key={`${link.url}-${t(link.label)}`}
+                      href={href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`bp-button bp-project-link bp-project-link--${linkKind}`}
+                    >
+                      <ProjectLinkIcon kind={linkKind} />
+                      {t(link.label)}
+                    </a>
+                  );
+                })}
+                {period ? (
+                  <span className="bp-period">
+                    <Calendar />
+                    {period}
+                  </span>
+                ) : null}
               </div>
             </div>
-          </div>
-        </>
-      )}
-
-      <aside className="hidden min-[1700px]:block fixed left-0 top-20 z-30 w-80 px-4">
-        <div className="max-h-[calc(100vh-6rem)] overflow-hidden">
-          <div className="px-1">
-            <Link
-              to="/projects"
-              className="inline-flex w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#101a2f]/35 backdrop-blur px-3 py-2 text-sm text-white hover:bg-[#101a2f]/50 transition"
-            >
-              <span className="inline-flex items-center gap-2">
-                <ArrowLeft className="w-4 h-4 text-[#3be3ff]" />
-                {t(uiBackProjects)}
-              </span>
-              <span className="h-1.5 w-1.5 rounded-full bg-white/20"></span>
-            </Link>
-          </div>
-
-          {hasExtraContent && (
-            <div className="mt-5 px-1">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Contents</div>
-                <span className="h-px flex-1 bg-white/10"></span>
-              </div>
-
-              <nav className="max-h-[calc(100vh-15rem)] overflow-y-auto overflow-x-hidden pr-1 space-y-1">
-                {toc.map((sec) => (
-                  <div key={sec.id} className="mb-2">
-                    <div className="grid grid-cols-[1.25rem,1fr] items-center gap-2 px-1">
-                      {sec.groups.length > 0 ? (
-                        <button
-                          type="button"
-                          aria-label={tocExpandedBySection[sec.id] ? 'Collapse section' : 'Expand section'}
-                          onClick={() => setTocExpandedBySection((cur) => ({ ...cur, [sec.id]: !cur[sec.id] }))}
-                          className="inline-flex items-center justify-center w-5 h-5 rounded-md hover:bg-white/10 transition active:scale-[0.98]"
-                        >
-                          <ChevronRight
-                            className={`w-4 h-4 text-slate-300 transition-transform ${
-                              tocExpandedBySection[sec.id] ? 'rotate-90' : ''
-                            }`}
-                          />
-                        </button>
-                      ) : (
-                        <span className="w-5 h-5" />
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => scrollToSection(sec.id)}
-                        className="group min-w-0 text-left px-3 py-2 rounded-2xl border border-transparent bg-transparent text-slate-200 hover:bg-white/5 hover:border-white/10 transition active:scale-[0.98]"
-                        title={sec.label}
-                      >
-                        <span className="block truncate text-[15px] font-semibold leading-snug text-slate-100">{sec.label}</span>
-                      </button>
-                    </div>
-
-                    {sec.groups.length > 0 && tocExpandedBySection[sec.id] && (
-                      <div className="mt-1 space-y-0.5">
-                        {sec.groups.map((g) => (
-                          <div key={g.id} className="space-y-0.5">
-                            <div className="grid grid-cols-[1.25rem,1fr] items-center gap-2 px-1" style={{ paddingLeft: 16 }}>
-                              {g.children.length > 0 ? (
-                                <button
-                                  type="button"
-                                  aria-label={tocExpandedByGroup[`${sec.id}::${g.id}`] ? 'Collapse group' : 'Expand group'}
-                                  onClick={() =>
-                                    setTocExpandedByGroup((cur) => ({
-                                      ...cur,
-                                      [`${sec.id}::${g.id}`]: !cur[`${sec.id}::${g.id}`],
-                                    }))
-                                  }
-                                  className="inline-flex items-center justify-center w-5 h-5 rounded-md hover:bg-white/10 transition active:scale-[0.98]"
-                                >
-                                  <ChevronRight
-                                    className={`w-4 h-4 text-slate-400 transition-transform ${
-                                      tocExpandedByGroup[`${sec.id}::${g.id}`] ? 'rotate-90' : ''
-                                    }`}
-                                  />
-                                </button>
-                              ) : (
-                                <span className="w-5 h-5" />
-                              )}
-
-                              <button
-                                type="button"
-                                onClick={() => scrollToSection(g.id)}
-                                className="group min-w-0 text-left px-3 py-1.5 rounded-2xl border border-transparent bg-transparent hover:bg-white/5 hover:border-white/10 transition active:scale-[0.98]"
-                                title={g.label}
-                              >
-                                <span className="block truncate text-sm font-medium text-slate-300">{g.label}</span>
-                              </button>
-                            </div>
-
-                            {g.children.length > 0 && tocExpandedByGroup[`${sec.id}::${g.id}`] && (
-                              <div className="space-y-0.5" style={{ paddingLeft: 32 }}>
-                                {g.children.map((c) => (
-                                  <div key={c.id} className="grid grid-cols-[1.25rem,1fr] items-center gap-2 px-1">
-                                    <span className="w-5 h-5" />
-                                    <button
-                                      type="button"
-                                      onClick={() => scrollToSection(c.id)}
-                                      className="group min-w-0 text-left px-3 py-1.5 rounded-2xl border border-transparent bg-transparent hover:bg-white/5 hover:border-white/10 transition active:scale-[0.98]"
-                                      title={c.label}
-                                    >
-                                      <span className="block truncate text-sm text-slate-400">{c.label}</span>
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </nav>
-            </div>
-          )}
-        </div>
-      </aside>
-
-      <div className="min-[1700px]:pl-80 min-[1700px]:pr-80">
-        <div className="max-w-7xl mx-auto px-4 max-[390px]:px-3 sm:px-6 lg:px-8 py-10 relative">
-          {!hasExtraContent && (
-            <Link to="/projects" className="min-[1700px]:hidden inline-flex items-center gap-2 text-[#3be3ff] hover:text-[#f9b234] mb-8 transition-colors">
-              <ArrowLeft className="w-4 h-4" />
-              {t(uiBackProjects)}
-            </Link>
-          )}
-
-          <article className="space-y-10">
-          <header
-            id="overview"
-            className={`relative -mx-4 max-[390px]:-mx-3 sm:mx-0 rounded-3xl sm:rounded-[2.5rem] p-[1px] shadow-2xl shadow-black/35 bg-gradient-to-br from-[#3be3ff]/25 via-white/5 to-[#f9b234]/20 transition ${
-              highlightSection === 'overview' ? 'ring-2 ring-[#3be3ff]/30' : ''
-            }`}
-          >
-              <div className="relative rounded-3xl sm:rounded-[2.5rem] overflow-hidden bg-[#0b1221]/70">
-              <div className="relative w-full pt-[56.25%] sm:pt-0 sm:h-[420px] md:h-[520px]">
-
-                {!project.thumbnail_video_url && project.thumbnail_image_url && (
-                  <img
-                    src={withBaseUrl(project.thumbnail_image_url)}
-                    alt={`${localizedTitle} cover`}
-                    className="absolute inset-0 w-full h-full object-contain sm:object-cover"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = withBaseUrl('/assets/sample-arch.svg');
-                    }}
-                  />
-                )}
-
-                {project.thumbnail_video_url && (
-                  <>
-                    <img
-                      src={withBaseUrl(project.thumbnail_image_url || '/assets/sample-arch.svg')}
-                      alt={`${localizedTitle} poster`}
-                      className="absolute inset-0 w-full h-full object-contain sm:object-cover"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = withBaseUrl('/assets/sample-arch.svg');
-                      }}
-                    />
-                    <video
-                      src={withBaseUrl(project.thumbnail_video_url)}
-                      muted
-                      playsInline
-                      loop
-                      autoPlay
-                      preload="metadata"
-                      className={`absolute inset-0 w-full h-full object-contain sm:object-cover transition-opacity duration-200 ${heroVideoReady ? 'opacity-100' : 'opacity-0'}`}
-                      onLoadedData={() => {
-                        setHeroVideoReady(true);
-                        setHeroShowPlaceholder(false);
-                      }}
-                      onError={(e) => {
-                        (e.currentTarget as HTMLVideoElement).style.display = 'none';
-                      }}
-                    />
-                  </>
-                )}
-
-                {project.thumbnail_video_url && !heroVideoReady && heroShowPlaceholder && (
-                  <div className="absolute inset-0">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_25%,rgba(59,227,255,0.22),transparent_55%),radial-gradient(circle_at_80%_10%,rgba(249,178,52,0.14),transparent_55%),linear-gradient(135deg,rgba(7,11,20,0.95),rgba(16,26,47,0.92))]" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0b1221]/80 via-[#0b1221]/35 to-transparent" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-[84%] max-w-[720px] rounded-3xl border border-white/10 bg-[#0b1221]/35 backdrop-blur-sm p-6 shadow-2xl shadow-black/40">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 grid place-items-center">
-                            <div className="w-0 h-0 border-y-[9px] border-y-transparent border-l-[14px] border-l-white/70 translate-x-[1px]" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="h-3 w-44 rounded-full bg-white/10 motion-reduce:animate-none animate-pulse" />
-                            <div className="mt-3 h-3 w-72 max-w-full rounded-full bg-white/10 motion-reduce:animate-none animate-pulse" />
-                          </div>
-                        </div>
-                        <div className="mt-6 h-2 rounded-full bg-white/10 overflow-hidden">
-                          <div className="h-full w-1/3 bg-white/15 motion-reduce:animate-none animate-pulse" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-              </div>
-
-              <div className="px-5 sm:px-8 pt-5 sm:pt-6 pb-4 sm:pb-6 bg-[#0b1221]/65 border-t border-white/5">
-                {(projectLinks.length > 0 || periodLabel) && (
-                  <div className="mt-3 mb-3 flex flex-wrap items-center gap-3">
-                    {projectLinks.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {projectLinks.map((link, idx) => {
-                          const href = resolveProjectUrl(link.url);
-                          const favicon = getFaviconUrl(href);
-                          return (
-                            <a
-                              key={`${link.url}-${idx}`}
-                              href={href}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="group inline-flex items-center gap-2.5 px-3.5 py-2 rounded-xl border border-[#3be3ff]/25 bg-[#0b1221]/70 text-[13px] font-semibold text-slate-100 hover:border-[#3be3ff]/60 hover:bg-[#0f1b33] shadow-[0_6px_18px_rgba(8,15,30,0.35)] transition"
-                            >
-                              <span className="w-7 h-7 rounded-lg bg-[#0f1b33] border border-white/10 flex items-center justify-center">
-                                {favicon ? (
-                                  <img
-                                    src={favicon}
-                                    alt=""
-                                    className="w-4 h-4 rounded-sm"
-                                    onError={(e) => {
-                                      (e.currentTarget as HTMLImageElement).style.display = 'none';
-                                    }}
-                                  />
-                                ) : (
-                                  <ArrowUpRight className="w-4 h-4 text-[#3be3ff]" />
-                                )}
-                              </span>
-                              <span className="max-w-[220px] truncate">{t(link.label) || href}</span>
-                            </a>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {periodLabel && (
-                      <div className="sm:ml-auto inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-white/10 bg-[#0b1221]/55 text-[12px] font-semibold text-slate-200 tracking-[0.08em] uppercase">
-                        <Calendar className="w-4 h-4 text-[#f9b234]" />
-                        <span>{periodLabel}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {projectTags.length > 0 && (
-                  <div className="flex flex-nowrap sm:flex-wrap gap-2 overflow-x-auto sm:overflow-visible max-w-full pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                    {projectTags.slice(0, 6).map((tech, idx) => (
-                      <span
-                        key={`${tech}-${idx}`}
-                        className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] sm:text-xs font-semibold rounded-full border border-white/10 bg-white/5 text-slate-100"
-                      >
-                        <Tag className="w-3 h-3 text-[#3be3ff]" />
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <h1 className="mt-4 text-[clamp(24px,8vw,44px)] sm:text-[clamp(34px,3.4vw,56px)] font-semibold text-white leading-[1.05] sm:leading-tight">
-                  {localizedTitle}
-                </h1>
-
-                {(localizedSummary || '').trim() && (
-                  <p className="mt-2 text-sm sm:text-lg text-slate-200/85 leading-relaxed line-clamp-2">
-                    {localizedSummary}
-                  </p>
-                )}
-              </div>
-
-              <div className="px-6 sm:px-8 pb-7 pt-6 bg-[#101a2f]/55 border-t border-white/5">
-                <RichText text={localizedDescription} className="text-lg" snippetRenderer={renderSnippet} headingIdPrefix="overview--" />
-              </div>
-            </div>
+            <BlueprintMedia
+              image={project.thumbnail_image_url ? withBaseUrl(project.thumbnail_image_url) : undefined}
+              video={project.thumbnail_video_url ? withBaseUrl(project.thumbnail_video_url) : undefined}
+              alt={title}
+              autoPlay
+              eager
+              className="bp-project-hero__media"
+            />
           </header>
 
-          {hasExtraContent &&
-            contentBlocks.map((blk, idx) => {
-              const sectionId = `content-${blk.id || idx}`;
-              const title = (t(blk.title) || '').trim() || `${t(uiSectionLabel)} ${idx + 1}`;
-              return (
-                <section
-                  key={sectionId}
-                  id={sectionId}
-                  className={`bg-[#101a2f]/70 border border-white/5 -mx-4 max-[390px]:-mx-3 sm:mx-0 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-lg shadow-black/20 transition ${
-                    highlightSection === sectionId ? 'ring-2 ring-[#3be3ff]/30' : ''
-                  }`}
-                >
-                  <h2 className="text-2xl font-semibold text-white mb-4">{title}</h2>
-                  <RichText text={t(blk.content) || ''} className="text-lg" snippetRenderer={renderSnippet} headingIdPrefix={`${sectionId}--`} />
+          <div className="bp-project-layout">
+            <div className="bp-project-content">
+              {parsedContent.overview ? (
+                <section className="bp-content-section bp-enter bp-enter--2">
+                  <BlueprintSectionTitle
+                    code="ƒ GetOverview()"
+                    comment={ui.overview}
+                  />
+                  <RichText
+                    text={parsedContent.overview}
+                    className="blueprint-richtext"
+                    headingIdPrefix="overview--"
+                    snippetRenderer={renderSnippet}
+                  />
                 </section>
-              );
-            })}
-          </article>
-        </div>
-      </div>
+              ) : null}
 
-      {showFloatingNav && (
-        <div className="fixed z-50 bottom-5 right-4 sm:right-6 flex flex-col gap-2 min-[1700px]:hidden">
-          <button
-            type="button"
-            onClick={scrollToTop}
-            className="inline-flex items-center justify-center w-11 h-11 rounded-2xl border border-white/10 bg-[#101a2f]/80 hover:bg-[#101a2f] transition shadow-lg shadow-black/30 backdrop-blur"
-            title={t(uiScrollTop)}
-            aria-label={t(uiScrollTop)}
-          >
-            <ArrowUp className="w-5 h-5 text-slate-100" />
-          </button>
-        </div>
-      )}
+              {parsedContent.sections.map((section, index) => {
+                const functionName =
+                  section.kind === 'problem'
+                    ? 'GetProblem'
+                    : section.kind === 'solution'
+                      ? 'GetSolution'
+                      : `GetSection${index + 1}`;
+                const pinColor =
+                  section.kind === 'problem'
+                    ? '#c94e6f'
+                    : section.kind === 'solution'
+                      ? '#7fd6a4'
+                      : '#6fa8c9';
 
-      <div className="min-[1700px]:pl-80 min-[1700px]:pr-80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Footer />
-        </div>
-      </div>
+                return (
+                  <section
+                    key={`${section.title}-${index}`}
+                    className="bp-content-section"
+                  >
+                    <BlueprintSectionTitle
+                      code={`ƒ ${functionName}()`}
+                      comment={section.title}
+                      pinColor={pinColor}
+                    />
+                    <RichText
+                      text={section.content}
+                      className="blueprint-richtext"
+                      headingIdPrefix={`section-${index}--`}
+                      snippetRenderer={renderSnippet}
+                    />
+                  </section>
+                );
+              })}
+
+              {parsedContent.media.length > 0 ? (
+                <section className="bp-content-section bp-media-section">
+                  <BlueprintSectionTitle
+                    code="ƒ GetMedia()"
+                    comment={ui.media}
+                  />
+                  <BlueprintMediaGallery
+                    items={parsedContent.media}
+                    language={language}
+                  />
+                </section>
+              ) : null}
+
+              {result ? (
+                <section className="bp-result-node">
+                  <RichText
+                    text={result}
+                    className="blueprint-richtext"
+                    headingIdPrefix="result--"
+                    snippetRenderer={renderSnippet}
+                  />
+                </section>
+              ) : null}
+
+              {blocks.map((block, index) => {
+                const blockTitle = t(block.title) || `${ui.overview} ${index + 2}`;
+                return (
+                  <section key={block.id || index} className="bp-content-section">
+                    <BlueprintSectionTitle code={`ƒ GetSection(${index + 1})`} comment={blockTitle} />
+                    <RichText
+                      text={t(block.content)}
+                      className="blueprint-richtext"
+                      headingIdPrefix={`content-${block.id || index}--`}
+                      snippetRenderer={renderSnippet}
+                    />
+                  </section>
+                );
+              })}
+            </div>
+
+            <aside className="bp-project-sidebar bp-enter bp-enter--3">
+              {technicalItems.length > 0 ? (
+                <div className="bp-tech-node">
+                  <BlueprintNodeHeader tone="game">
+                    ƒ GetTechStack() <span className="bp-comment">// {ui.tech}</span>
+                  </BlueprintNodeHeader>
+                  <ul>
+                    {technicalItems.map((tag, index) => {
+                      const colors = ['#4ec9b0', '#c9a44e', '#c94e6f', '#9c6fc9', '#6fa8c9'];
+                      return (
+                        <li key={tag}>
+                          <span className="bp-pin" style={{ background: colors[index % colors.length] }} />
+                          {tag}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ) : null}
+
+              {nextProject ? (
+                <Link to={`/project/${nextProject.slug}`} className="bp-next-project">
+                  <small>{ui.next}</small>
+                  <strong>{t(nextProject.title)}</strong>
+                  <span>
+                    {ui.inspect}
+                    <BlueprintChevron />
+                  </span>
+                </Link>
+              ) : null}
+            </aside>
+          </div>
+        </article>
+
+        <Footer />
+      </main>
     </div>
   );
 }

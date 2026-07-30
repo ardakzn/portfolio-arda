@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Maximize2, Minus, Plus, X } from 'lucide-react';
 import { normalizeMarkdownText, slugifyHeading as slugifyHeadingStable } from '../lib/markdown';
 import { withBaseUrl } from '../lib/paths';
@@ -275,31 +275,58 @@ function renderInline(text: string, size: RichTextSize) {
 function MediaLightbox({
   item,
   onClose,
+  onPrevious,
+  onNext,
 }: {
   item: MediaItem | null;
   onClose: () => void;
+  onPrevious?: () => void;
+  onNext?: () => void;
 }) {
   const [zoom, setZoom] = useState(1);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const closeRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (!item) return;
     setZoom(1);
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    closeRef.current?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
+      if (event.key === 'ArrowRight' && onNext) onNext();
+      if (event.key === 'ArrowLeft' && onPrevious) onPrevious();
       if (event.key === '+' || event.key === '=') setZoom((value) => Math.min(3, Number((value + 0.25).toFixed(2))));
       if (event.key === '-') setZoom((value) => Math.max(0.5, Number((value - 0.25).toFixed(2))));
       if (event.key === '0') setZoom(1);
+      if (event.key === 'Tab') {
+        const focusable = Array.from(
+          dialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), video[controls], [tabindex]:not([tabindex="-1"])') || [],
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
     };
 
     document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', onKeyDown);
 
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', onKeyDown);
+      previousFocus?.focus();
     };
-  }, [item, onClose]);
+  }, [item, onClose, onNext, onPrevious]);
 
   if (!item) return null;
 
@@ -307,13 +334,16 @@ function MediaLightbox({
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[90] bg-black/95 text-white"
       role="dialog"
       aria-modal="true"
+      aria-label={item.alt || 'Media viewer'}
       onClick={onClose}
     >
       <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
         <button
+          ref={closeRef}
           type="button"
           onClick={(e) => {
             e.stopPropagation();
@@ -325,6 +355,33 @@ function MediaLightbox({
           <X className="h-5 w-5" />
         </button>
       </div>
+
+      {onPrevious && onNext ? (
+        <>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onPrevious();
+            }}
+            className="absolute left-3 top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-black/55 text-white transition hover:border-[#6fa8c9] hover:text-[#8dbdd8]"
+            aria-label="Previous media"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onNext();
+            }}
+            className="absolute right-3 top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-black/55 text-white transition hover:border-[#6fa8c9] hover:text-[#8dbdd8]"
+            aria-label="Next media"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </>
+      ) : null}
 
       {!isVideo && (
         <div className="absolute bottom-4 right-4 z-20 flex items-center gap-2">
@@ -423,15 +480,15 @@ function Carousel({ items, media }: { items: MediaItem[]; media?: MediaOptions }
     timerRef.current = null;
   };
 
-  const goNext = () => {
+  const goNext = useCallback(() => {
     if (safeItems.length <= 1) return;
     setIndex((i) => (i + 1) % safeItems.length);
-  };
+  }, [safeItems.length]);
 
-  const goPrev = () => {
+  const goPrev = useCallback(() => {
     if (safeItems.length <= 1) return;
     setIndex((i) => (i - 1 + safeItems.length) % safeItems.length);
-  };
+  }, [safeItems.length]);
 
   useEffect(() => {
     clearTimer();
@@ -478,7 +535,7 @@ function Carousel({ items, media }: { items: MediaItem[]; media?: MediaOptions }
       clearTimer();
       video.removeEventListener('ended', onEnded);
     };
-  }, [index, lightboxItem, safeItems, SLIDE_MS]);
+  }, [goNext, index, lightboxItem, safeItems, SLIDE_MS]);
 
   useEffect(() => {
     for (const [idxRaw, el] of Object.entries(videoRefs.current)) {
@@ -591,7 +648,12 @@ function Carousel({ items, media }: { items: MediaItem[]; media?: MediaOptions }
           </div>
         )}
       </div>
-      <MediaLightbox item={lightboxItem} onClose={() => setLightboxItem(null)} />
+      <MediaLightbox
+        item={lightboxItem}
+        onClose={() => setLightboxItem(null)}
+        onPrevious={safeItems.length > 1 ? goPrev : undefined}
+        onNext={safeItems.length > 1 ? goNext : undefined}
+      />
     </div>
   );
 }

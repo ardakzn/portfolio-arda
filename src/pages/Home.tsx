@@ -1,626 +1,802 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, ArrowRight, Code2, Sparkles, X, FileDown, ChevronRight } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Linkedin,
+  Mail,
+  X,
+} from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import {
+  BlueprintChevron,
+  BlueprintMedia,
+  BlueprintNodeHeader,
+  BlueprintSectionTitle,
+  BlueprintTypewriter,
+} from '../components/Blueprint';
+import {
+  projectTone,
+  projectTypeLabel,
+  releaseLabel,
+} from '../lib/blueprintProject';
 import { getProjectTags, loadProjectsList } from '../lib/projects';
 import { useSiteRuntime } from '../lib/siteRuntime';
-import type { ProjectWithDetails } from '../types/portfolio';
 import { withBaseUrl } from '../lib/paths';
+import type { ProjectWithDetails } from '../types/portfolio';
 
-type FeaturedCard = {
+const SLIDE_INTERVAL = 5000;
+
+function GithubBrandIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="11" fill="#fff" />
+      <path
+        fill="#7d2ca8"
+        transform="translate(3.36 3.36) scale(.72)"
+        d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"
+      />
+    </svg>
+  );
+}
+
+const copy = {
+  en: {
+    role: 'game developer',
+    years: 'YEARS EXPERIENCE',
+    steam: 'SHIPPED STEAM GAMES',
+    tools: 'PUBLISHED TOOLS',
+    featured: 'Featured work',
+    skills: 'Skills',
+    projects: 'Projects',
+    filter: 'FilterProjects(tags)',
+    tags: 'TAGS:',
+    clear: 'clear',
+    details: 'details',
+    previous: 'previous',
+    next: 'next',
+    swipe: 'SWIPE',
+    noResult: 'No projects match these tags.',
+    showAll: 'Show all',
+    contact: 'contact',
+    workTogether: 'Let’s work together.',
+    contactLead: 'I’m open to new opportunities and collaborations.',
+    liveOn: 'Published',
+    cvPreview: 'CV Preview',
+    close: 'Close',
+    download: 'Download PDF',
+    openTab: 'Open in new tab',
+  },
+  tr: {
+    role: 'game developer',
+    years: 'YIL DENEYİM',
+    steam: 'SHIPPED STEAM OYUNU',
+    tools: 'YAYINLANMIŞ TOOL',
+    featured: 'Öne çıkanlar',
+    skills: 'Yetkinlikler',
+    projects: 'Projeler',
+    filter: 'FilterProjects(tags)',
+    tags: 'ETİKETLER:',
+    clear: 'temizle',
+    details: 'detaylar',
+    previous: 'önceki',
+    next: 'sonraki',
+    swipe: 'KAYDIR',
+    noResult: 'Bu etiketlerle eşleşen proje bulunamadı.',
+    showAll: 'Tümünü göster',
+    contact: 'iletişim',
+    workTogether: 'Birlikte çalışalım.',
+    contactLead: 'Yeni fırsatlara ve iş birliklerine açığım.',
+    liveOn: 'Yayında',
+    cvPreview: 'CV Önizleme',
+    close: 'Kapat',
+    download: 'PDF’i indir',
+    openTab: 'Yeni sekmede aç',
+  },
+} as const;
+
+type CardProps = {
   project: ProjectWithDetails;
-  image?: string;
-  video?: string;
-  slug: string;
-  tags: string[];
+  language: string;
+  title: string;
+  summary: string;
+  detailLabel: string;
+  period: string;
 };
 
-const featuredFallbackGradient =
-  'radial-gradient(circle at 20% 25%, rgba(59, 227, 255, 0.22), transparent 55%), radial-gradient(circle at 80% 10%, rgba(249, 178, 52, 0.14), transparent 55%), linear-gradient(135deg, rgba(7, 11, 20, 0.95), rgba(16, 26, 47, 0.92))';
+function ProjectCard({ project, language, title, summary, detailLabel, period }: CardProps) {
+  const image = project.thumbnail_image_url ? withBaseUrl(project.thumbnail_image_url) : undefined;
+  const video = project.thumbnail_video_url ? withBaseUrl(project.thumbnail_video_url) : undefined;
+  const tags = getProjectTags(project);
+  const release = releaseLabel(project, language);
+
+  return (
+    <Link to={`/project/${project.slug}`} className="bp-project-card">
+      <BlueprintNodeHeader tone={projectTone(project)}>{projectTypeLabel(project)}</BlueprintNodeHeader>
+      <BlueprintMedia image={image} video={video} alt={title} className="bp-project-card__media" />
+      <div className="bp-project-card__body">
+        <h3>{title}</h3>
+        {release ? (
+          <span className="bp-release-badge">
+            <span />
+            {release}
+          </span>
+        ) : null}
+        <p>{summary}</p>
+        <div className="bp-tags" aria-label="Project tags">
+          {tags.map((tag) => (
+            <span key={tag}>{tag}</span>
+          ))}
+        </div>
+        <div className="bp-project-card__footer">
+          <span>{period}</span>
+          <span className="bp-details-link">
+            {detailLabel}
+            <BlueprintChevron />
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function EventNode({ name, label }: { name: string; label: string }) {
+  return (
+    <div className="bp-event-sequence" aria-hidden="true">
+      <div className="bp-event-node">
+        <span className="bp-event-node__event">
+          <span className="bp-exec-pin" />
+          <strong>{name}</strong>
+        </span>
+        <span className="bp-event-node__output">{label}</span>
+      </div>
+      <span className="bp-flow-wire" />
+    </div>
+  );
+}
 
 export default function Home() {
-  const { site, t } = useSiteRuntime();
-  const cvBaseUrl = withBaseUrl((site.links?.cv_pdf_url || '/assets/CV.pdf').trim() || '/assets/CV.pdf');
-  const pdfUrl = `${cvBaseUrl}#zoom=page-width`;
-  const email = (site.links?.email || 'hello@yourdomain.com').trim() || 'hello@yourdomain.com';
-
-  const [featured, setFeatured] = useState<FeaturedCard[]>([]);
+  const { site, t, language } = useSiteRuntime();
+  const ui = language === 'tr' ? copy.tr : copy.en;
+  const [projects, setProjects] = useState<ProjectWithDetails[]>([]);
+  const [loading, setLoading] = useState(true);
   const [slideIndex, setSlideIndex] = useState(0);
   const [carouselPaused, setCarouselPaused] = useState(false);
-  const [featuredVideoReady, setFeaturedVideoReady] = useState<Record<string, boolean>>({});
-  const [featuredShowPlaceholder, setFeaturedShowPlaceholder] = useState<Record<string, boolean>>({});
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [projectStripIndex, setProjectStripIndex] = useState(0);
+  const [projectStripDragging, setProjectStripDragging] = useState(false);
+  const [projectsEntered, setProjectsEntered] = useState(false);
+  const [statProgress, setStatProgress] = useState(0);
   const [cvOpen, setCvOpen] = useState(false);
-  const [pdfStatus, setPdfStatus] = useState<'loading' | 'ready' | 'unavailable'>('loading');
-
-  const placeholderTimersRef = useRef<Record<string, number>>({});
-  const carouselTimerRef = useRef<number | null>(null);
-  const featuredVideoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
-  const pendingRestartSlugRef = useRef<string | null>(null);
-  const [mobileFeaturedOverlay, setMobileFeaturedOverlay] = useState(true);
-  const mobileOverlayTimerRef = useRef<number | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-  const featuredSwipeRef = useRef<{
-    pointerId: number | null;
+  const featuredTouchStartRef = useRef<number | null>(null);
+  const projectStripRef = useRef<HTMLDivElement | null>(null);
+  const projectDragRef = useRef<{
     startX: number;
-    startY: number;
-    lastX: number;
-    lastY: number;
+    startScrollLeft: number;
     moved: boolean;
-  }>({ pointerId: null, startX: 0, startY: 0, lastX: 0, lastY: 0, moved: false });
-  const suppressFeaturedClickRef = useRef(false);
+  } | null>(null);
+  const suppressProjectClickRef = useRef(false);
+  const cvDialogRef = useRef<HTMLDivElement | null>(null);
+  const cvCloseRef = useRef<HTMLButtonElement | null>(null);
+
+  const cvUrl = withBaseUrl((site.links?.cv_pdf_url || '/assets/CV.pdf').trim() || '/assets/CV.pdf');
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const list = await loadProjectsList();
-        const ordered = list.slice().sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
-        const pick = ordered.filter((p) => p.featured).slice(0, 4);
-        const useList = pick.length > 0 ? pick : ordered.slice(0, 4);
-
-        const mapped: FeaturedCard[] = useList.map((p) => ({
-          project: p,
-          image: ((p.thumbnail_image_url || '').trim() && withBaseUrl((p.thumbnail_image_url || '').trim())) || undefined,
-          video: ((p.thumbnail_video_url || '').trim() && withBaseUrl((p.thumbnail_video_url || '').trim())) || undefined,
-          slug: p.slug,
-          tags: getProjectTags(p).slice(0, 3),
-        }));
-
-        setFeatured(mapped);
-        setFeaturedVideoReady({});
-        setFeaturedShowPlaceholder({});
-        setSlideIndex(0);
-      } catch (err) {
-        console.error(err);
-      }
+    let active = true;
+    void loadProjectsList()
+      .then((items) => {
+        if (!active) return;
+        setProjects(items);
+      })
+      .catch((error) => console.error(error))
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
     };
-    void load();
   }, []);
 
   useEffect(() => {
-    const mql = window.matchMedia('(max-width: 639px)');
-    const update = () => setIsMobile(mql.matches);
-    update();
-    mql.addEventListener('change', update);
-    return () => mql.removeEventListener('change', update);
-  }, []);
-
-  const armMobileOverlay = (ms = 2200) => {
-    if (mobileOverlayTimerRef.current) {
-      window.clearTimeout(mobileOverlayTimerRef.current);
-      mobileOverlayTimerRef.current = null;
+    if (loading) {
+      setProjectsEntered(false);
+      return;
+    }
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setProjectsEntered(true);
+      return;
     }
 
-    setMobileFeaturedOverlay(true);
-    mobileOverlayTimerRef.current = window.setTimeout(() => {
-      setMobileFeaturedOverlay(false);
-      mobileOverlayTimerRef.current = null;
-    }, ms);
-  };
+    const timer = window.setTimeout(() => setProjectsEntered(true), 500);
+    return () => window.clearTimeout(timer);
+  }, [loading]);
 
   useEffect(() => {
-    for (const key of Object.keys(placeholderTimersRef.current)) {
-      window.clearTimeout(placeholderTimersRef.current[key]);
+    if (loading) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setStatProgress(1);
+      return;
     }
-    placeholderTimersRef.current = {};
 
-    const next: Record<string, boolean> = {};
-    for (const item of featured) {
-      if (!item.video) continue;
-      next[item.slug] = false;
-      placeholderTimersRef.current[item.slug] = window.setTimeout(() => {
-        setFeaturedShowPlaceholder((cur) => {
-          if (featuredVideoReady[item.slug]) return cur;
-          return { ...cur, [item.slug]: true };
-        });
-      }, 150);
-    }
-    setFeaturedShowPlaceholder(next);
+    let frame = 0;
+    let startTime = 0;
+    const delay = window.setTimeout(() => {
+      const tick = (time: number) => {
+        if (!startTime) startTime = time;
+        const linearProgress = Math.min((time - startTime) / 1100, 1);
+        setStatProgress(1 - Math.pow(1 - linearProgress, 3));
+        if (linearProgress < 1) frame = window.requestAnimationFrame(tick);
+      };
+      frame = window.requestAnimationFrame(tick);
+    }, 600);
 
     return () => {
-      for (const key of Object.keys(placeholderTimersRef.current)) {
-        window.clearTimeout(placeholderTimersRef.current[key]);
-      }
-      placeholderTimersRef.current = {};
+      window.clearTimeout(delay);
+      window.cancelAnimationFrame(frame);
     };
-    // We intentionally only react to the featured list changing (not videoReady),
-    // to avoid re-arming timers while videos are loading.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [featured.map((f) => f.slug).join('|')]);
+  }, [loading]);
+
+  const featured = useMemo(() => {
+    const featuredWithVideo = projects.filter((project) => project.featured && project.thumbnail_video_url);
+    if (featuredWithVideo.length > 0) return featuredWithVideo.slice(0, 3);
+    const marked = projects.filter((project) => project.featured);
+    return (marked.length > 0 ? marked : projects).slice(0, 3);
+  }, [projects]);
 
   useEffect(() => {
-    if (carouselTimerRef.current) {
-      window.clearTimeout(carouselTimerRef.current);
-      carouselTimerRef.current = null;
-    }
-
-    if (featured.length <= 1) return;
-    if (carouselPaused) return;
-
-    carouselTimerRef.current = window.setTimeout(() => {
-      setSlideIndex((i) => (i + 1) % featured.length);
-    }, 5000);
-
-    return () => {
-      if (carouselTimerRef.current) {
-        window.clearTimeout(carouselTimerRef.current);
-        carouselTimerRef.current = null;
-      }
-    };
+    if (featured.length <= 1 || carouselPaused) return;
+    const id = window.setTimeout(() => setSlideIndex((index) => (index + 1) % featured.length), SLIDE_INTERVAL);
+    return () => window.clearTimeout(id);
   }, [carouselPaused, featured.length, slideIndex]);
-
-  useEffect(() => {
-    if (!isMobile) return;
-    if (featured.length === 0) return;
-    armMobileOverlay(2200);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMobile, slideIndex, featured.length]);
 
   useEffect(() => {
     if (slideIndex >= featured.length) setSlideIndex(0);
   }, [featured.length, slideIndex]);
 
+  const tags = useMemo(
+    () =>
+      Array.from(new Set(projects.flatMap((project) => getProjectTags(project))))
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b)),
+    [projects],
+  );
+
+  const filteredProjects = useMemo(() => {
+    if (selectedTags.length === 0) return projects;
+    return projects.filter((project) => {
+      const projectTags = getProjectTags(project).map((tag) => tag.toLowerCase());
+      return selectedTags.every((tag) => projectTags.includes(tag.toLowerCase()));
+    });
+  }, [projects, selectedTags]);
+
+  const visibleProjects = filteredProjects;
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags((current) => (current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]));
+  };
+
   useEffect(() => {
-    const activeItem = featured[slideIndex];
-    const activeSlug = activeItem?.slug ?? null;
+    setProjectStripIndex(0);
+    projectStripRef.current?.scrollTo({ left: 0 });
+  }, [selectedTags]);
 
-    for (const item of featured) {
-      if (!item.video) continue;
-      if (item.slug === activeSlug) continue;
-      featuredVideoRefs.current[item.slug]?.pause();
-    }
+  const scrollProjectStrip = (target: number) => {
+    const strip = projectStripRef.current;
+    if (!strip || visibleProjects.length === 0) return;
+    const index = Math.max(0, Math.min(target, visibleProjects.length - 1));
+    const card = strip.children.item(index) as HTMLElement | null;
+    if (!card) return;
+    const left = card.offsetLeft - (strip.clientWidth - card.clientWidth) / 2;
+    strip.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
+    setProjectStripIndex(index);
+  };
 
-    if (!activeItem?.video || !activeSlug) return;
-
-    const activeEl = featuredVideoRefs.current[activeSlug];
-    if (!activeEl) return;
-
-    const restart = () => {
-      try {
-        activeEl.pause();
-      } catch {}
-
-      try {
-        activeEl.currentTime = 0;
-        pendingRestartSlugRef.current = null;
-      } catch {
-        pendingRestartSlugRef.current = activeSlug;
+  const updateProjectStripIndex = () => {
+    const strip = projectStripRef.current;
+    if (!strip || strip.children.length === 0) return;
+    const center = strip.scrollLeft + strip.clientWidth / 2;
+    let closestIndex = 0;
+    let closestDistance = Number.POSITIVE_INFINITY;
+    Array.from(strip.children).forEach((child, index) => {
+      const card = child as HTMLElement;
+      const distance = Math.abs(card.offsetLeft + card.offsetWidth / 2 - center);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
       }
-
-      void activeEl.play().catch(() => {});
-    };
-
-    // Always restart on slide change so the video starts from the beginning.
-    restart();
-  }, [featured, slideIndex]);
-
-  const markFeaturedVideoReady = (slug: string, el?: HTMLVideoElement | null) => {
-    setFeaturedVideoReady((cur) => ({ ...cur, [slug]: true }));
-    const timer = placeholderTimersRef.current[slug];
-    if (timer) window.clearTimeout(timer);
-    setFeaturedShowPlaceholder((cur) => ({ ...cur, [slug]: false }));
-
-    if (pendingRestartSlugRef.current !== slug) return;
-    if (!el) return;
-
-    try {
-      el.currentTime = 0;
-    } catch {
-      // ignore
-    }
-    void el.play().catch(() => {});
-    pendingRestartSlugRef.current = null;
+    });
+    setProjectStripIndex(closestIndex);
   };
 
-  const pauseCarousel = () => {
-    if (carouselTimerRef.current) {
-      window.clearTimeout(carouselTimerRef.current);
-      carouselTimerRef.current = null;
-    }
-    setCarouselPaused(true);
-  };
-
-  const resumeCarousel = () => {
-    setCarouselPaused(false);
-  };
-
-  const onFeaturedPointerDown: React.PointerEventHandler<HTMLDivElement> = (e) => {
-    if (featured.length <= 1) return;
-    if (e.button !== 0) return;
-    if (e.pointerType === 'mouse') return;
-
-    if (isMobile) armMobileOverlay(10_000);
-
-    featuredSwipeRef.current = {
-      pointerId: e.pointerId,
-      startX: e.clientX,
-      startY: e.clientY,
-      lastX: e.clientX,
-      lastY: e.clientY,
+  const startProjectDrag = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || window.matchMedia('(min-width: 901px)').matches) return;
+    projectDragRef.current = {
+      startX: event.clientX,
+      startScrollLeft: event.currentTarget.scrollLeft,
       moved: false,
     };
-
-    pauseCarousel();
-    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+    setProjectStripDragging(true);
   };
 
-  const onFeaturedPointerMove: React.PointerEventHandler<HTMLDivElement> = (e) => {
-    const s = featuredSwipeRef.current;
-    if (s.pointerId !== e.pointerId) return;
-    s.lastX = e.clientX;
-    s.lastY = e.clientY;
-
-    const dx = s.lastX - s.startX;
-    const dy = s.lastY - s.startY;
-    const absX = Math.abs(dx);
-    const absY = Math.abs(dy);
-
-    if (!s.moved) {
-      if (absX < 10) return;
-      if (absX <= absY) return;
-      s.moved = true;
-      suppressFeaturedClickRef.current = true;
-      window.setTimeout(() => {
-        suppressFeaturedClickRef.current = false;
-      }, 350);
-    }
-
-    if (s.moved) e.preventDefault();
+  const moveProjectDrag = (event: React.MouseEvent<HTMLDivElement>) => {
+    const drag = projectDragRef.current;
+    if (!drag) return;
+    const delta = event.clientX - drag.startX;
+    if (Math.abs(delta) > 6) drag.moved = true;
+    if (!drag.moved) return;
+    event.preventDefault();
+    event.currentTarget.scrollLeft = drag.startScrollLeft - delta;
   };
 
-  const onFeaturedPointerUp: React.PointerEventHandler<HTMLDivElement> = (e) => {
-    const s = featuredSwipeRef.current;
-    if (s.pointerId !== e.pointerId) return;
+  const endProjectDrag = (event: React.MouseEvent<HTMLDivElement>) => {
+    const drag = projectDragRef.current;
+    if (!drag) return;
+    projectDragRef.current = null;
+    setProjectStripDragging(false);
+    if (!drag.moved) return;
 
-    const dx = s.lastX - s.startX;
-    const dy = s.lastY - s.startY;
-    const absX = Math.abs(dx);
-    const absY = Math.abs(dy);
+    suppressProjectClickRef.current = true;
+    window.setTimeout(() => {
+      suppressProjectClickRef.current = false;
+    }, 120);
 
-    featuredSwipeRef.current.pointerId = null;
-    resumeCarousel();
-
-    if (isMobile) armMobileOverlay(900);
-
-    if (!s.moved) return;
-    if (absX < 50 || absX <= absY) return;
-
-    if (dx > 0) setSlideIndex((i) => (i - 1 + featured.length) % featured.length);
-    else setSlideIndex((i) => (i + 1) % featured.length);
+    const strip = event.currentTarget;
+    const center = strip.scrollLeft + strip.clientWidth / 2;
+    let closestIndex = 0;
+    let closestDistance = Number.POSITIVE_INFINITY;
+    Array.from(strip.children).forEach((child, index) => {
+      const card = child as HTMLElement;
+      const distance = Math.abs(card.offsetLeft + card.offsetWidth / 2 - center);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+    scrollProjectStrip(closestIndex);
   };
 
   useEffect(() => {
     if (!cvOpen) return;
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setCvOpen(false);
-    };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [cvOpen]);
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    cvCloseRef.current?.focus();
 
-  useEffect(() => {
-    if (!cvOpen) return;
-    setPdfStatus('loading');
-    const checkPdf = async () => {
-      try {
-        const res = await fetch(pdfUrl, { method: 'HEAD' });
-        if (res.ok) {
-          setPdfStatus('ready');
-        } else {
-          setPdfStatus('unavailable');
-        }
-      } catch {
-        setPdfStatus('unavailable');
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setCvOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusable = Array.from(
+        cvDialogRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])',
+        ) || [],
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
       }
     };
-    void checkPdf();
-  }, [cvOpen, pdfUrl]);
 
-  const aboutLines = (t(site.home?.about_card_lines) || '')
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+      previousFocus?.focus();
+    };
+  }, [cvOpen]);
+
+  const steamCount = projects.filter((project) => getProjectTags(project).some((tag) => tag.toLowerCase() === 'steam')).length;
+  const toolCount = projects.filter((project) =>
+    getProjectTags(project).some((tag) => ['plugin', 'asset store'].includes(tag.toLowerCase())),
+  ).length;
+  const animatedYears = Math.round(5 * statProgress);
+  const animatedSteamCount = Math.round((steamCount || 2) * statProgress);
+  const animatedToolCount = Math.round((toolCount || 2) * statProgress);
+
+  const skills = [
+    { title: 'Unreal Engine / C++', detail: 'gameplay systems · plugins', color: '#4ec9b0' },
+    { title: 'Unity / C#', detail: 'tooling · asset store', color: '#c9a44e' },
+    { title: 'Multiplayer', detail: 'netcode · replication', color: '#c94e6f' },
+    { title: 'AI Behavior', detail: 'behavior trees · EQS', color: '#9c6fc9' },
+    { title: language === 'tr' ? 'VR Prototipleri' : 'VR Prototypes', detail: 'interaction · UI-state', color: '#6fa8c9' },
+  ];
+
+  const formatPeriod = (project: ProjectWithDetails) => {
+    const start = t(project.period_start);
+    const end = t(project.period_end);
+    if (start && end) return `${start} — ${end}`;
+    return start || end || '';
+  };
 
   return (
-    <div
-      className="min-h-screen text-slate-100 relative overflow-x-hidden"
-      style={{
-        background:
-          'radial-gradient(circle at 20% 20%, rgba(59, 227, 255, 0.08), transparent 25%), radial-gradient(circle at 80% 10%, rgba(249, 178, 52, 0.08), transparent 25%), linear-gradient(135deg, #060b16 0%, #0e1526 100%)',
-      }}
-    >
-      <div
-        className="pointer-events-none absolute inset-0 opacity-50"
-        style={{ background: 'radial-gradient(circle at 50% 50%, rgba(59, 227, 255, 0.05), transparent 50%)' }}
-      ></div>
-
+    <div className="blueprint-site">
       <Navbar />
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative space-y-12">
-        {featured.length > 0 && (
-          <section className="space-y-3">
-            <div
-              className="group relative w-screen sm:w-full left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 overflow-hidden rounded-3xl bg-[#0f172a]/80 shadow-2xl shadow-black/30"
-              onMouseEnter={pauseCarousel}
-              onMouseLeave={resumeCarousel}
-              onFocusCapture={pauseCarousel}
-              onBlurCapture={resumeCarousel}
-            >
-              <div
-                className={`pointer-events-none absolute inset-0 transition-opacity duration-300 ${
-                  isMobile ? (mobileFeaturedOverlay ? 'opacity-100' : 'opacity-0') : 'opacity-0 sm:group-hover:opacity-100'
-                }`}
-              >
-                <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
-              </div>
-
-              <div
-                className="flex w-full transition-transform duration-700 ease-in-out touch-pan-y will-change-transform"
-                style={{ transform: `translate3d(-${slideIndex * 100}%, 0, 0)` }}
-                onPointerDown={onFeaturedPointerDown}
-                onPointerMove={onFeaturedPointerMove}
-                onPointerUp={onFeaturedPointerUp}
-                onPointerCancel={onFeaturedPointerUp}
-              >
-                {featured.map((item, itemIdx) => (
-                  <Link
-                    key={item.slug}
-                    to={`/project/${item.slug}`}
-                    onClick={(e) => {
-                      if (!suppressFeaturedClickRef.current) return;
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    className={[
-                      'group relative flex-none w-full pt-[68%] sm:pt-0 sm:h-[360px] md:h-[420px] block overflow-hidden',
-                      itemIdx === 0 ? '' : '-ml-px',
-                    ].join(' ')}
-                  >
-                    <div className="absolute inset-0" style={{ backgroundImage: featuredFallbackGradient }} />
-                    {!item.video && item.image && (
-                      <img
-                        src={item.image}
-                        alt={t(item.project.title)}
-                        className="absolute inset-0 w-full h-full object-cover transform-gpu scale-[1.08] sm:scale-100"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    )}
-                    {item.video && (
-                      <video
-                        ref={(el) => {
-                          featuredVideoRefs.current[item.slug] = el;
-                        }}
-                        src={item.video}
-                        muted
-                        playsInline
-                        loop
-                        preload="metadata"
-                        className={`absolute inset-0 w-full h-full object-cover transform-gpu scale-[1.08] sm:scale-100 transition-opacity duration-200 ${
-                          featuredVideoReady[item.slug] ? 'opacity-100' : 'opacity-0'
-                        }`}
-                        onLoadedData={(e) => markFeaturedVideoReady(item.slug, e.currentTarget)}
-                        onError={(e) => {
-                          (e.currentTarget as HTMLVideoElement).style.display = 'none';
-                        }}
-                      />
-                    )}
-
-                    {item.video && !featuredVideoReady[item.slug] && featuredShowPlaceholder[item.slug] && (
-                      <div className="absolute inset-0 transition-opacity duration-200">
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#060b16]/75 via-[#060b16]/45 to-transparent" />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="relative w-[84%] max-w-[720px] rounded-3xl border border-white/10 bg-[#0b1221]/40 backdrop-blur-sm p-6 shadow-2xl shadow-black/40">
-                            <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 grid place-items-center">
-                                <div className="w-0 h-0 border-y-[9px] border-y-transparent border-l-[14px] border-l-white/70 translate-x-[1px]" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="h-3 w-44 rounded-full bg-white/10 motion-reduce:animate-none animate-pulse" />
-                                <div className="mt-3 h-3 w-72 max-w-full rounded-full bg-white/10 motion-reduce:animate-none animate-pulse" />
-                              </div>
-                            </div>
-                            <div className="mt-6 h-2 rounded-full bg-white/10 overflow-hidden">
-                              <div className="h-full w-1/3 bg-white/15 motion-reduce:animate-none animate-pulse" />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div
-                      className={`absolute inset-0 transition-opacity duration-300 bg-gradient-to-t from-[#060b16]/85 via-[#060b16]/35 to-transparent ${
-                        isMobile ? (mobileFeaturedOverlay ? 'opacity-100' : 'opacity-0') : 'opacity-0 sm:group-hover:opacity-100'
-                      }`}
-                    ></div>
-                    <div className="absolute inset-0 flex items-end">
-                      <div className="p-4 sm:p-6 md:p-8 space-y-2.5 max-w-2xl">
-                        <h3
-                          className={`text-2xl sm:text-3xl md:text-4xl leading-tight font-semibold text-white transition-all duration-300 ${
-                            isMobile
-                              ? mobileFeaturedOverlay
-                                ? 'opacity-100 translate-y-0'
-                                : 'opacity-0 translate-y-1 pointer-events-none'
-                              : 'opacity-0 translate-y-2 sm:group-hover:opacity-100 sm:group-hover:translate-y-0'
-                          }`}
-                        >
-                          {t(item.project.title)}
-                        </h3>
-                        <div
-                          className={`transition-all duration-300 ${
-                            isMobile
-                              ? mobileFeaturedOverlay
-                                ? 'opacity-100 translate-y-0'
-                                : 'opacity-0 translate-y-1 pointer-events-none'
-                              : 'opacity-0 translate-y-2 sm:group-hover:opacity-100 sm:group-hover:translate-y-0'
-                          }`}
-                        >
-                          <p className="text-xs sm:text-sm text-slate-200/90 line-clamp-2">{t(item.project.summary)}</p>
-                          <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2.5 sm:mt-3">
-                            {item.tags.map((tag) => (
-                              <span
-                                key={tag}
-                                className="px-2.5 py-0.5 text-[11px] sm:px-3 sm:py-1 sm:text-xs font-semibold rounded-full border border-white/10 text-[#3be3ff] bg-[#3be3ff]/10"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-
-              <div className="absolute bottom-4 right-4 flex items-center gap-2">
-                {featured.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      if (carouselTimerRef.current) {
-                        window.clearTimeout(carouselTimerRef.current);
-                        carouselTimerRef.current = null;
-                      }
-                      setSlideIndex(i);
-                    }}
-                    className={`w-2 h-2 rounded-full transition ${i === slideIndex ? 'bg-[#3be3ff]' : 'bg-white/40'}`}
-                    aria-label={`Slide ${i + 1}`}
-                  ></button>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        <section className="grid lg:grid-cols-[1.05fr_0.95fr] gap-12 items-center">
-          <div className="space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#101a2f] border border-white/5 text-xs uppercase tracking-[0.2em] text-slate-300">
-              <Sparkles className="w-4 h-4 text-[#3be3ff]" />
-              {t(site.home?.badge) || 'Case Studies'}
-            </div>
-
-            <div className="space-y-4">
-              <h1 className="text-4xl md:text-5xl font-semibold leading-tight text-white">
-                {t(site.home?.headline) || 'Developer-focused, minimal portfolio'}
+      <main className="bp-shell bp-home">
+        <section className="bp-hero" aria-label={t(site.home?.headline) || 'Arda Kozan'}>
+          <div className="bp-hero__mobile-identity bp-enter bp-enter--1">
+            <EventNode name="OnInit()" label="run" />
+            <h1>
+              {t(site.home?.headline) || 'Arda Kozan'}
+              <span>
+                <BlueprintChevron />
+                <BlueprintTypewriter text={ui.role} delay={260} speed={54} />
+              </span>
+            </h1>
+          </div>
+          <div className="bp-hero__copy bp-enter bp-enter--1">
+            <div className="bp-hero__desktop-identity">
+              <EventNode name="OnInit()" label="run" />
+              <h1>
+                {t(site.home?.headline) || 'Arda Kozan'}
+                <span>
+                  <BlueprintChevron />
+                  <BlueprintTypewriter text={ui.role} delay={260} speed={54} />
+                </span>
               </h1>
-              <p className="text-lg text-slate-300 max-w-2xl leading-relaxed">{t(site.home?.lead)}</p>
             </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Link
-                to="/projects"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#3be3ff] text-slate-950 font-semibold shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition"
-              >
-                {t(site.home?.cta_projects) || 'Browse projects'} <ArrowRight className="w-4 h-4" />
-              </Link>
-              <button
-                type="button"
-                onClick={() => setCvOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#f9b234] text-slate-950 font-semibold shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 transition"
-              >
-                {t(site.home?.cta_cv) || 'View CV'} <ArrowRight className="w-4 h-4" />
+            <p>{t(site.home?.lead)}</p>
+            <div className="bp-hero__actions">
+              <button type="button" className="bp-button bp-button--primary" onClick={() => setCvOpen(true)}>
+                {t(site.home?.cta_cv) || ui.cvPreview}
               </button>
-              <a
-                href={`mailto:${email}`}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 text-slate-100 hover:border-[#f9b234] transition"
-              >
-                {t(site.home?.cta_email) || 'Email'} <Mail className="w-4 h-4 text-[#f9b234]" />
-              </a>
+            </div>
+            <div className="bp-stats" aria-label="Career summary">
+              <div>
+                <span className="bp-stat-label">
+                  <i style={{ background: '#6fa8c9' }} />
+                  {ui.years}
+                </span>
+                <strong className="bp-stat-breathe">{animatedYears}+</strong>
+              </div>
+              <div>
+                <span className="bp-stat-label">
+                  <i style={{ background: '#4ec9b0' }} />
+                  {ui.steam}
+                </span>
+                <strong>{animatedSteamCount}</strong>
+              </div>
+              <div>
+                <span className="bp-stat-label">
+                  <i style={{ background: '#c9a44e' }} />
+                  {ui.tools}
+                </span>
+                <strong>{animatedToolCount}</strong>
+              </div>
             </div>
           </div>
 
-          <div className="relative">
-            <div className="absolute inset-0 bg-[#3be3ff] blur-3xl opacity-10"></div>
-            <div className="relative rounded-3xl overflow-hidden border border-white/5 bg-[#101a2f]/90 shadow-2xl shadow-cyan-500/10">
-              <div className="px-5 py-4 flex items-center justify-between border-b border-white/5">
-                <div className="flex items-center gap-2 text-xs text-slate-300">
-                  <div className="w-2 h-2 rounded-full bg-[#3be3ff]"></div>
-                  <div className="w-2 h-2 rounded-full bg-[#f9b234]"></div>
-                  <div className="w-2 h-2 rounded-full bg-white/50"></div>
-                  <span className="ml-2 uppercase tracking-[0.2em]">{t(site.home?.about_card_title) || 'Quick summary'}</span>
+          <div
+            className="bp-featured-wrap bp-enter bp-enter--2"
+            onMouseEnter={() => setCarouselPaused(true)}
+            onMouseLeave={() => setCarouselPaused(false)}
+            onTouchStart={(event) => {
+              featuredTouchStartRef.current = event.touches[0]?.clientX ?? null;
+            }}
+            onTouchEnd={(event) => {
+              const start = featuredTouchStartRef.current;
+              featuredTouchStartRef.current = null;
+              if (start === null || featured.length <= 1) return;
+              const delta = (event.changedTouches[0]?.clientX ?? start) - start;
+              if (Math.abs(delta) <= 40) return;
+              setSlideIndex((index) => (index + (delta < 0 ? 1 : -1) + featured.length) % featured.length);
+            }}
+          >
+            <div className="bp-featured">
+              <BlueprintNodeHeader
+                aside={`index: ${String(Math.min(slideIndex + 1, Math.max(1, featured.length))).padStart(2, '0')}/${String(
+                  Math.max(1, featured.length),
+                ).padStart(2, '0')}`}
+              >
+                <span>ƒ GetFeaturedProject()</span>{' '}
+                <span className="bp-comment">// {ui.featured}</span>
+              </BlueprintNodeHeader>
+              <div className="bp-featured__viewport">
+                <div className="bp-featured__track" style={{ transform: `translate3d(-${slideIndex * 100}%,0,0)` }}>
+                  {featured.map((project, index) => {
+                    const title = t(project.title);
+                    const release = releaseLabel(project, language);
+                    return (
+                      <Link key={project.slug} to={`/project/${project.slug}`} className="bp-featured__slide">
+                        <BlueprintMedia
+                          image={project.thumbnail_image_url ? withBaseUrl(project.thumbnail_image_url) : undefined}
+                          video={project.thumbnail_video_url ? withBaseUrl(project.thumbnail_video_url) : undefined}
+                          alt={title}
+                          autoPlay={Boolean(project.thumbnail_video_url)}
+                          eager={index === 0}
+                        />
+                        {release ? (
+                          <span className="bp-release-badge bp-release-badge--overlay">
+                            <span />
+                            {release}
+                          </span>
+                        ) : null}
+                        <div className="bp-featured__meta">
+                          <div>
+                            <h2>{title}</h2>
+                            <p>return: {getProjectTags(project).slice(0, 3).join(' · ')}</p>
+                          </div>
+                          <span>out ●</span>
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
-                <Code2 className="w-5 h-5 text-[#3be3ff]" />
+                {featured.length > 1 ? (
+                  <>
+                    <button
+                      type="button"
+                      className="bp-carousel-arrow bp-carousel-arrow--prev"
+                      onClick={() => setSlideIndex((index) => (index - 1 + featured.length) % featured.length)}
+                      aria-label={ui.previous}
+                    >
+                      <ChevronLeft />
+                    </button>
+                    <button
+                      type="button"
+                      className="bp-carousel-arrow bp-carousel-arrow--next"
+                      onClick={() => setSlideIndex((index) => (index + 1) % featured.length)}
+                      aria-label={ui.next}
+                    >
+                      <ChevronRight />
+                    </button>
+                  </>
+                ) : null}
               </div>
-              <div className="p-6 space-y-3 text-sm text-slate-200 leading-relaxed">
-                {aboutLines.length > 0 ? (
-                  aboutLines.map((line, idx) => (
-                    <div key={idx} className="flex items-start gap-2">
-                      <ChevronRight className="w-4 h-4 text-[#3be3ff] mt-0.5" />
-                      <p className="flex-1">{line}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-slate-400">-</p>
-                )}
-              </div>
+            </div>
+            <div className="bp-carousel-dots" aria-label="Featured slides">
+              {featured.map((project, index) => (
+                <button
+                  type="button"
+                  key={project.slug}
+                  className={index === slideIndex ? 'is-active' : ''}
+                  onClick={() => setSlideIndex(index)}
+                  aria-label={`${ui.featured} ${index + 1}`}
+                  aria-current={index === slideIndex ? 'true' : undefined}
+                />
+              ))}
             </div>
           </div>
         </section>
 
-        <Footer />
-      </div>
-
-      {cvOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center px-2 md:px-4 py-4 md:py-8">
-          <div className="absolute inset-0" onClick={() => setCvOpen(false)} aria-hidden="true"></div>
-          <div
-            className="relative bg-[#0f172a] border border-white/10 rounded-3xl shadow-2xl overflow-hidden z-10 flex flex-col"
-            style={{ width: '98vw', height: '95vh', maxWidth: 'none', maxHeight: '95vh' }}
-          >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#0b1221]">
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-[#f9b234]">{t(site.home?.cv_modal_kicker) || 'CV Preview'}</p>
-                <h3 className="text-lg font-semibold text-white">{t(site.home?.cv_modal_title) || 'View and download the PDF'}</h3>
+        <section className="bp-skills bp-enter bp-enter--3" aria-labelledby="skills-title">
+          <BlueprintSectionTitle code="ƒ GetSkills()" comment={ui.skills} />
+          <h2 id="skills-title" className="sr-only">
+            {ui.skills}
+          </h2>
+          <div className="bp-skills__grid">
+            {skills.map((skill) => (
+              <div key={skill.title} className="bp-skill-card">
+                <span className="bp-pin" style={{ background: skill.color }} />
+                <span>
+                  <strong>{skill.title}</strong>
+                  <small>{skill.detail}</small>
+                </span>
               </div>
-              <button
-                type="button"
-                onClick={() => setCvOpen(false)}
-                className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white transition"
-                aria-label="Close"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+            ))}
+          </div>
+        </section>
 
-            <div className="flex flex-wrap items-center gap-3 px-6 py-4 border-b border-white/5 bg-[#0b1221]/80 text-sm text-slate-200">
-              <FileDown className="w-4 h-4 text-[#f9b234]" />
-              <a
-                href={pdfUrl}
-                download
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#f9b234] text-slate-950 font-semibold shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 transition"
-              >
-                {t(site.home?.cv_modal_download) || 'Download PDF'}
-              </a>
-              <span className="text-slate-500">{t(site.home?.cv_modal_or) || 'or'}</span>
-              <a href={pdfUrl} target="_blank" rel="noreferrer" className="text-[#3be3ff] hover:text-[#f9b234] transition">
-                {t(site.home?.cv_modal_open_new_tab) || 'Open in new tab'}
-              </a>
-            </div>
+        <section id="projeler" className="bp-projects bp-enter bp-enter--4" aria-labelledby="projects-title">
+          <BlueprintSectionTitle code="ForEach(Projects)" comment={ui.projects} />
+          <h2 id="projects-title" className="sr-only">
+            {ui.projects}
+          </h2>
 
-            <div className="flex-1 bg-black/30 rounded-b-3xl">
-              <div className="w-full h-full">
-                {pdfStatus === 'loading' && (
-                  <div className="w-full h-full flex items-center justify-center text-slate-300 text-sm gap-2">
-                    <span className="inline-block w-4 h-4 rounded-full border-2 border-white/20 border-t-[#f9b234] animate-spin"></span>
-                    {t(site.home?.cv_modal_loading) || 'Loading PDFÔÇĞ'}
-                  </div>
-                )}
-                {pdfStatus === 'ready' && (
-                  <object data={pdfUrl} type="application/pdf" className="w-full h-full" style={{ width: '100%', height: '100%' }}>
-                    <div className="p-4 text-sm text-slate-200">{t(site.home?.cv_modal_pdf_fallback) || 'Your browser cannot preview PDFs.'}</div>
-                  </object>
-                )}
-                {pdfStatus === 'unavailable' && (
-                  <div className="w-full h-full flex items-center justify-center p-4 text-sm text-slate-200 text-center">
-                    {t(site.home?.cv_modal_unavailable) || 'Preview is unavailable right now, but you can download the PDF above.'}
-                  </div>
-                )}
+          <div className={`bp-filter ${filtersOpen ? 'is-open' : ''}`}>
+            <button
+              type="button"
+              className="bp-filter__header"
+              onClick={() => setFiltersOpen((open) => !open)}
+              aria-expanded={filtersOpen}
+              aria-controls="project-filters"
+            >
+              <span>ƒ {ui.filter}</span>
+              <span>
+                return: {filteredProjects.length}/{projects.length}
+                <ChevronDown />
+              </span>
+            </button>
+            <div
+              id="project-filters"
+              className="bp-filter__body"
+              aria-hidden={!filtersOpen}
+            >
+              <span className="bp-filter__label">{ui.tags}</span>
+              <div className="bp-filter__chips">
+                {tags.map((tag) => {
+                  const active = selectedTags.includes(tag);
+                  return (
+                    <button
+                      type="button"
+                      key={tag}
+                      className={active ? 'is-active' : ''}
+                      onClick={() => toggleTag(tag)}
+                      aria-pressed={active}
+                      disabled={!filtersOpen}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
               </div>
+              {selectedTags.length > 0 ? (
+                <button
+                  type="button"
+                  className="bp-filter__clear"
+                  disabled={!filtersOpen}
+                  onClick={() => {
+                    setSelectedTags([]);
+                  }}
+                >
+                  <X />
+                  {ui.clear}
+                </button>
+              ) : null}
             </div>
           </div>
+
+          {loading ? (
+            <div className="bp-project-grid bp-project-grid--loading" aria-label="Loading projects">
+              {Array.from({ length: 6 }, (_, index) => (
+                <div key={index} className="bp-project-skeleton" />
+              ))}
+            </div>
+          ) : visibleProjects.length > 0 ? (
+            <>
+              <div
+                className={`bp-project-grid ${projectStripDragging ? 'is-dragging' : ''}`}
+                ref={projectStripRef}
+                onScroll={updateProjectStripIndex}
+                onMouseDown={startProjectDrag}
+                onMouseMove={moveProjectDrag}
+                onMouseUp={endProjectDrag}
+                onMouseLeave={endProjectDrag}
+                onDragStart={(event) => event.preventDefault()}
+                onClickCapture={(event) => {
+                  if (!suppressProjectClickRef.current) return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
+              >
+                {visibleProjects.map((project, index) => (
+                  <div
+                    key={project.slug}
+                    className={`bp-project-entry ${projectsEntered ? 'is-entered' : ''}`}
+                    style={{ '--bp-index': index } as React.CSSProperties}
+                  >
+                    <ProjectCard
+                      project={project}
+                      language={language}
+                      title={t(project.title)}
+                      summary={t(project.summary)}
+                      detailLabel={ui.details}
+                      period={formatPeriod(project)}
+                    />
+                  </div>
+                ))}
+              </div>
+              {visibleProjects.length > 1 ? (
+                <div className="bp-project-strip-nav" aria-label={ui.projects}>
+                  <button
+                    type="button"
+                    onClick={() => scrollProjectStrip(0)}
+                    disabled={projectStripIndex === 0}
+                    aria-label={`${ui.projects}: 1`}
+                  >
+                    <BlueprintChevron />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollProjectStrip(projectStripIndex - 1)}
+                    disabled={projectStripIndex === 0}
+                    aria-label={ui.previous}
+                  >
+                    <ChevronLeft />
+                  </button>
+                  <span>
+                    {String(projectStripIndex + 1).padStart(2, '0')} / {String(visibleProjects.length).padStart(2, '0')} ·{' '}
+                    {ui.swipe}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => scrollProjectStrip(projectStripIndex + 1)}
+                    disabled={projectStripIndex === visibleProjects.length - 1}
+                    aria-label={ui.next}
+                  >
+                    <ChevronRight />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollProjectStrip(visibleProjects.length - 1)}
+                    disabled={projectStripIndex === visibleProjects.length - 1}
+                    aria-label={`${ui.projects}: ${visibleProjects.length}`}
+                  >
+                    <BlueprintChevron />
+                  </button>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <div className="bp-empty">
+              <p>{ui.noResult}</p>
+              <button
+                type="button"
+                className="bp-button bp-button--secondary"
+                onClick={() => {
+                  setSelectedTags([]);
+                }}
+              >
+                {ui.showAll}
+              </button>
+            </div>
+          )}
+
+        </section>
+
+        <section id="iletisim" className="bp-contact bp-enter bp-enter--5" aria-labelledby="contact-title">
+          <div>
+            <EventNode name="OnExit()" label={ui.contact} />
+            <h2 id="contact-title">{ui.workTogether}</h2>
+            <p>{ui.contactLead}</p>
+          </div>
+          <div className="bp-contact__actions">
+            <a className="bp-button bp-button--primary" href={`mailto:${site.links?.email || 'arda.kzn@gmail.com'}`}>
+              <Mail />
+              SendMessage()
+            </a>
+            <a className="bp-button bp-profile-link bp-profile-link--github" href={site.links?.github_url} target="_blank" rel="noreferrer">
+              <GithubBrandIcon />
+              GitHub
+            </a>
+            <a className="bp-button bp-profile-link bp-profile-link--linkedin" href={site.links?.linkedin_url} target="_blank" rel="noreferrer">
+              <Linkedin />
+              LinkedIn
+            </a>
+          </div>
+        </section>
+
+        <Footer />
+      </main>
+
+      {cvOpen ? (
+        <div className="bp-modal" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setCvOpen(false)}>
+          <div ref={cvDialogRef} className="bp-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="cv-title">
+            <BlueprintNodeHeader aside="PDF">ƒ OpenDocument()</BlueprintNodeHeader>
+            <div className="bp-modal__toolbar">
+              <div>
+                <span>{ui.cvPreview}</span>
+                <h2 id="cv-title">{t(site.home?.cv_modal_title)}</h2>
+              </div>
+              <button ref={cvCloseRef} type="button" onClick={() => setCvOpen(false)} aria-label={ui.close}>
+                <X />
+              </button>
+            </div>
+            <div className="bp-modal__actions">
+              <a href={cvUrl} download className="bp-button bp-button--primary">
+                <Download />
+                {ui.download}
+              </a>
+              <a href={cvUrl} target="_blank" rel="noreferrer" className="bp-button bp-button--secondary">
+                {ui.openTab}
+                <BlueprintChevron />
+              </a>
+            </div>
+            <iframe src={`${cvUrl}#zoom=page-width`} title={ui.cvPreview} />
+          </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

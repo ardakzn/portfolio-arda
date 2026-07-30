@@ -4,7 +4,7 @@ import { loadDraftSite } from './siteDraft';
 import { withBaseUrl } from './paths';
 
 export function getDefaultSite(): SiteData {
-  return {
+  const site: SiteData = {
     languages: [
       { code: 'en', label: 'EN' },
       { code: 'tr', label: 'TR' },
@@ -73,6 +73,35 @@ export function getDefaultSite(): SiteData {
     },
     footer: {
       text: { en: '© 2026 — Minimal color, high readability.', tr: '© 2026 — Az renk, yüksek okunabilirlik.' },
+    },
+  };
+
+  return {
+    ...site,
+    navbar: {
+      ...site.navbar,
+      brand: { en: 'Arda Kozan', tr: 'Arda Kozan' },
+    },
+    links: {
+      ...site.links,
+      email: 'arda.kzn@gmail.com',
+      github_url: 'https://github.com/ardakzn',
+      linkedin_url: 'https://www.linkedin.com/in/arda-kozan-b638141a6/',
+    },
+    home: {
+      ...site.home,
+      headline: { en: 'Arda Kozan', tr: 'Arda Kozan' },
+      lead: {
+        en: 'I am a computer engineer who has been working on game development for 5 years. I have built projects and tools with Unreal Engine and Unity/C#, focusing on gameplay systems, multiplayer flows, AI behavior, VR prototypes, UI integration, and reusable engine tools.',
+        tr: '5 yıldır game development ile ilgilenen bir bilgisayar mühendisiyim. Unreal Engine ve Unity/C# ile projeler ve araçlar geliştirdim; gameplay sistemleri, multiplayer akışları, AI davranışları, VR prototipleri, UI entegrasyonu ve yeniden kullanılabilir engine araçları üzerine çalışıyorum.',
+      },
+    },
+    footer: {
+      ...site.footer,
+      text: {
+        en: '© 2026 Arda Kozan. Gameplay systems, Unity/Unreal tooling, and technical development.',
+        tr: '© 2026 Arda Kozan. Gameplay sistemleri, Unity/Unreal tooling ve teknik geliştirme.',
+      },
     },
   };
 }

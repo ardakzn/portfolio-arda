@@ -13,6 +13,8 @@ export interface Project {
   period_end?: LocalizedText;
   tags?: string[];
   tech_stack?: string[]; // Legacy alias for tags; still supported for existing data.
+  technical_details?: string[];
+  result?: LocalizedText;
   featured: boolean;
   order_index: number;
   created_at: string;
