@@ -23,6 +23,7 @@ export function getDefaultSite(): SiteData {
       goatcounter_code: '',
     },
     home: {
+      years_experience: 5,
       badge: { en: 'Case Studies', tr: 'Öne Çıkan Çalışmalar' },
       headline: { en: 'Developer-focused, minimal portfolio', tr: 'Geliştirici odaklı minimal portfolyo' },
       lead: {
@@ -92,8 +93,8 @@ export function getDefaultSite(): SiteData {
       ...site.home,
       headline: { en: 'Arda Kozan', tr: 'Arda Kozan' },
       lead: {
-        en: 'I am a computer engineer who has been working on game development for 5 years. I have built projects and tools with Unreal Engine and Unity/C#, focusing on gameplay systems, multiplayer flows, AI behavior, VR prototypes, UI integration, and reusable engine tools.',
-        tr: '5 yıldır game development ile ilgilenen bir bilgisayar mühendisiyim. Unreal Engine ve Unity/C# ile projeler ve araçlar geliştirdim; gameplay sistemleri, multiplayer akışları, AI davranışları, VR prototipleri, UI entegrasyonu ve yeniden kullanılabilir engine araçları üzerine çalışıyorum.',
+        en: 'I am a computer engineer who has been working on game development for {years} years. I have built projects and tools with Unreal Engine and Unity/C#, focusing on gameplay systems, multiplayer flows, AI behavior, VR prototypes, UI integration, and reusable engine tools.',
+        tr: '{years} yıldır game development ile ilgilenen bir bilgisayar mühendisiyim. Unreal Engine ve Unity/C# ile projeler ve araçlar geliştirdim; gameplay sistemleri, multiplayer akışları, AI davranışları, VR prototipleri, UI entegrasyonu ve yeniden kullanılabilir engine araçları üzerine çalışıyorum.',
       },
     },
     footer: {

@@ -400,9 +400,11 @@ export default function Home() {
   const toolCount = projects.filter((project) =>
     getProjectTags(project).some((tag) => ['plugin', 'asset store'].includes(tag.toLowerCase())),
   ).length;
-  const animatedYears = Math.round(5 * statProgress);
+  const yearsExperience = Math.max(0, Math.round(Number(site.home?.years_experience) || 5));
+  const animatedYears = Math.round(yearsExperience * statProgress);
   const animatedSteamCount = Math.round((steamCount || 2) * statProgress);
   const animatedToolCount = Math.round((toolCount || 2) * statProgress);
+  const homeLead = t(site.home?.lead).split('{years}').join(String(yearsExperience));
 
   const skills = [
     { title: 'Unreal Engine / C++', detail: 'gameplay systems · plugins', color: '#4ec9b0' },
@@ -445,7 +447,7 @@ export default function Home() {
                 </span>
               </h1>
             </div>
-            <p>{t(site.home?.lead)}</p>
+            <p>{homeLead}</p>
             <div className="bp-hero__actions">
               <button type="button" className="bp-button bp-button--primary" onClick={() => setCvOpen(true)}>
                 {t(site.home?.cta_cv) || ui.cvPreview}

@@ -21,6 +21,7 @@ export type SiteData = {
     goatcounter_code?: string;
   };
   home: {
+    years_experience?: number;
     badge: LocalizedString;
     headline: LocalizedString;
     lead: LocalizedString;

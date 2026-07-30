@@ -1754,6 +1754,32 @@ export default function Admin() {
                         placeholder="Developer-focused, minimal portfolio"
                       />
                     </label>
+                    <label className="space-y-2">
+                      <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Years of experience</div>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={siteData.home.years_experience ?? 5}
+                        onChange={(e) =>
+                          setSiteData((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  home: {
+                                    ...prev.home,
+                                    years_experience: Math.max(0, Math.round(Number(e.target.value) || 0)),
+                                  },
+                                }
+                              : prev,
+                          )
+                        }
+                        className="w-full px-4 py-3 rounded-2xl bg-[#0b1221]/60 border border-white/10 text-slate-100 outline-none focus:border-[#3be3ff]/50"
+                      />
+                      <div className="text-xs text-slate-500">
+                        Used by homepage stats, the generated social preview, and <code>{'{years}'}</code> inside the lead.
+                      </div>
+                    </label>
                     <label className="space-y-2 md:col-span-2">
                       <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Lead</div>
                       <textarea

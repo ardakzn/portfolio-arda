@@ -25,6 +25,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
       - name: Publish to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
         with:
